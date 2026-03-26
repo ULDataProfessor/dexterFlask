@@ -10,6 +10,7 @@ from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 from readability import Document
 
+from dexter_flask.tools.cache_util import read_cache, write_cache
 from dexter_flask.tools.format_util import format_tool_result
 
 
@@ -23,6 +24,12 @@ def _fetch(inp: WebFetchIn) -> str:
     u = inp.url.strip()
     if urlparse(u).scheme not in ("http", "https"):
         return format_tool_result({"error": "Only http/https URLs"}, [])
+
+    cache_params = {"url": u, "extractMode": inp.extractMode, "maxChars": inp.maxChars}
+    cached = read_cache("web_fetch", cache_params)
+    if cached and isinstance(cached.get("data"), str):
+        return cached["data"]
+
     with httpx.Client(timeout=60.0, follow_redirects=True) as client:
         r = client.get(u, headers={"User-Agent": "DexterBot/1.0"})
         r.raise_for_status()
@@ -43,7 +50,8 @@ def _fetch(inp: WebFetchIn) -> str:
         pass
     truncated = len(text) > inp.maxChars
     text = text[: inp.maxChars]
-    return format_tool_result(
+
+    out = format_tool_result(
         {
             "url": u,
             "finalUrl": final,
@@ -54,6 +62,9 @@ def _fetch(inp: WebFetchIn) -> str:
         },
         [final],
     )
+    # Cache only successful responses (when we have a final URL).
+    write_cache("web_fetch", cache_params, out, final)
+    return out
 
 
 WEB_FETCH_DESCRIPTION = "Fetch a web page URL and return extracted readable content."

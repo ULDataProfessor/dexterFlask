@@ -27,6 +27,8 @@ dependencies = [
   "gunicorn>=22.0",
   "pyyaml>=6.0",
   "croniter>=2.0",
+  "rank-bm25>=0.2.2",
+  "rapidfuzz>=3.0",
 ]
 
 [project.optional-dependencies]

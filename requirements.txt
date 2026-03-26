@@ -17,3 +17,5 @@ tiktoken>=0.7
 playwright>=1.40
 pyyaml>=6.0
 croniter>=2.0
+rank-bm25>=0.2.2
+rapidfuzz>=3.0

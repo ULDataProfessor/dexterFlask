@@ -8,6 +8,7 @@ from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
 from dexter_flask.config import get_settings
+from dexter_flask.tools.cache_util import read_cache, write_cache
 from dexter_flask.tools.format_util import format_tool_result
 
 try:
@@ -60,13 +61,27 @@ def _exa(q: str) -> str:
 
 def _web_search(inp: SearchIn) -> str:
     s = get_settings()
-    try:
-        if s.exasearch_api_key:
-            return _exa(inp.query)
-        if s.tavily_api_key and TavilySearchResults:
-            return _tavily(inp.query)
-    except Exception as e:
-        return format_tool_result({"error": str(e)}, [])
+    if s.exasearch_api_key:
+        provider = "exa"
+    elif s.tavily_api_key and TavilySearchResults:
+        provider = "tavily"
+    else:
+        provider = None
+
+    if provider:
+        cache_params = {"query": inp.query, "provider": provider}
+        cached = read_cache("web_search", cache_params)
+        if cached and isinstance(cached.get("data"), str):
+            return cached["data"]
+
+        try:
+            out = _exa(inp.query) if provider == "exa" else _tavily(inp.query)
+        except Exception as e:
+            return format_tool_result({"error": str(e)}, [])
+
+        write_cache("web_search", cache_params, out, url=f"{provider}:search")
+        return out
+
     return format_tool_result({"error": "No search API key configured"}, [])
 
 
