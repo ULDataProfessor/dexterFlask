@@ -68,18 +68,14 @@ def test_agent_run_memory_recalled_event(monkeypatch) -> None:
     from dexter_flask.agent.types import AgentConfig
     import dexter_flask.agent.loop as agent_loop
 
-    def fake_call_llm(
-        *_: object, **__: object
-    ) -> tuple[Any, dict[str, int] | None]:
+    def fake_call_llm(*_: object, **__: object) -> tuple[Any, dict[str, int] | None]:
         return "FINAL", None
 
     monkeypatch.setattr(agent_loop, "call_llm", fake_call_llm)
 
     dummy_tool = type("T", (), {"name": "dummy"})()
     agent = Agent(
-        config=AgentConfig(
-            model="gpt-5.4", max_iterations=2, memory_enabled=True
-        ),
+        config=AgentConfig(model="gpt-5.4", max_iterations=2, memory_enabled=True),
         tools=[dummy_tool],
         system_prompt="SYS",
         memory_files_loaded=["daily"],

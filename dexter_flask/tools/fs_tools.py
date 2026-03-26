@@ -1,4 +1,5 @@
 """Sandboxed filesystem tools — mirror src/tools/filesystem/*.ts."""
+
 from __future__ import annotations
 
 from pathlib import Path

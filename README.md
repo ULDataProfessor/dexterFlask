@@ -26,9 +26,9 @@ More docs: `docs/PYTHON_QUICKSTART.md`, `docs/API.md`, `docs/DEV_AND_TESTING.md`
 **Quick start**
 
 ```bash
-python3 -m venv .venv
+uv venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+uv sync --dev
 cp env.example .env           # add API keys
 python -m dexter_flask.app  # default http://127.0.0.1:5050
 ```

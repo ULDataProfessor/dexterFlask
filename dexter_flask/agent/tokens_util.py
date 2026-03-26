@@ -1,4 +1,5 @@
 """Token estimation — mirror src/utils/tokens.ts."""
+
 from __future__ import annotations
 
 CONTEXT_THRESHOLD = 100_000

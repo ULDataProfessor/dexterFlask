@@ -1,4 +1,5 @@
 """SEC filings leaf tools — mirror src/tools/finance/filings.ts."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -104,12 +105,21 @@ def create_get_filings_tool() -> StructuredTool:
 def filing_item_tools() -> list[StructuredTool]:
     return [
         StructuredTool.from_function(
-            name="get_10K_filing_items", description="10-K filing items.", func=_10k, args_schema=F10KIn
+            name="get_10K_filing_items",
+            description="10-K filing items.",
+            func=_10k,
+            args_schema=F10KIn,
         ),
         StructuredTool.from_function(
-            name="get_10Q_filing_items", description="10-Q filing items.", func=_10q, args_schema=F10QIn
+            name="get_10Q_filing_items",
+            description="10-Q filing items.",
+            func=_10q,
+            args_schema=F10QIn,
         ),
         StructuredTool.from_function(
-            name="get_8K_filing_items", description="8-K filing items.", func=_8k, args_schema=F8KIn
+            name="get_8K_filing_items",
+            description="8-K filing items.",
+            func=_8k,
+            args_schema=F8KIn,
         ),
     ]

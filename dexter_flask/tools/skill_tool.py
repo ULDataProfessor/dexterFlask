@@ -1,4 +1,5 @@
 """Skill loader tool — mirror skill.ts."""
+
 from __future__ import annotations
 
 import re
@@ -50,5 +51,8 @@ def skill_tool_fn() -> StructuredTool | None:
     if not discover_skills():
         return None
     return StructuredTool.from_function(
-        name="skill", description=SKILL_TOOL_DESCRIPTION, func=_skill, args_schema=SkillIn
+        name="skill",
+        description=SKILL_TOOL_DESCRIPTION,
+        func=_skill,
+        args_schema=SkillIn,
     )

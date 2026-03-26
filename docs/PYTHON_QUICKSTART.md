@@ -14,9 +14,9 @@ Dexter’s research agent is implemented in Python (`dexter_flask/`) behind a sm
 ## Setup
 
 ```bash
-python3 -m venv .venv
+uv venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync --dev
 cp env.example .env
 # edit .env and add your keys
 ```

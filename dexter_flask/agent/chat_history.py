@@ -1,4 +1,5 @@
 """In-memory chat history — mirror src/utils/in-memory-chat-history.ts (subset)."""
+
 from __future__ import annotations
 
 import hashlib
@@ -36,7 +37,9 @@ MESSAGE_SELECTION_SYSTEM = (
 
 
 class InMemoryChatHistory:
-    def __init__(self, model: str = DEFAULT_MODEL, max_turns: int = DEFAULT_HISTORY_LIMIT) -> None:
+    def __init__(
+        self, model: str = DEFAULT_MODEL, max_turns: int = DEFAULT_HISTORY_LIMIT
+    ) -> None:
         self.model = model
         self.max_turns = max_turns
         self._messages: list[_Message] = []
@@ -57,7 +60,9 @@ class InMemoryChatHistory:
     def _generate_summary(self, query: str, answer: str) -> str:
         prompt = f'Query: "{query}"\nAnswer: "{answer[:1500]}"\n\nGenerate a brief 1-2 sentence summary.'
         try:
-            text, _ = call_llm(prompt, model=self.model, system_prompt=MESSAGE_SUMMARY_SYSTEM)
+            text, _ = call_llm(
+                prompt, model=self.model, system_prompt=MESSAGE_SUMMARY_SYSTEM
+            )
             return str(text).strip() if not isinstance(text, str) else text.strip()
         except Exception:
             return f"Answer to: {query[:100]}"
@@ -78,7 +83,9 @@ class InMemoryChatHistory:
         key = self._hash_q(current_query)
         if key in self._relevant_cache:
             return self._relevant_cache[key]
-        messages_info = [{"id": m.id, "query": m.query, "summary": m.summary} for m in completed]
+        messages_info = [
+            {"id": m.id, "query": m.query, "summary": m.summary} for m in completed
+        ]
         prompt = (
             f'Current user query: "{current_query}"\n\nPrevious conversations:\n'
             f"{messages_info}\n\nSelect message IDs relevant to the current query."

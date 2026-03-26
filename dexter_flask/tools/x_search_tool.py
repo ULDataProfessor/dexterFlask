@@ -1,4 +1,5 @@
 """X/Twitter search — mirror x-search.ts (subset)."""
+
 from __future__ import annotations
 
 import time
@@ -35,9 +36,13 @@ def _x_search(inp: XSearchIn) -> str:
 
 X_SEARCH_DESCRIPTION = "Search recent public posts on X/Twitter."
 
+
 def x_search_tool() -> StructuredTool | None:
     if not get_settings().x_bearer_token:
         return None
     return StructuredTool.from_function(
-        name="x_search", description=X_SEARCH_DESCRIPTION, func=_x_search, args_schema=XSearchIn
+        name="x_search",
+        description=X_SEARCH_DESCRIPTION,
+        func=_x_search,
+        args_schema=XSearchIn,
     )

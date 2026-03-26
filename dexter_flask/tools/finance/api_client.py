@@ -1,4 +1,5 @@
 """Financial Datasets API — mirror src/tools/finance/api.ts."""
+
 from __future__ import annotations
 
 from typing import Any

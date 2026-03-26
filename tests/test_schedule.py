@@ -1,4 +1,5 @@
 """Tests for cron schedule helper."""
+
 from __future__ import annotations
 
 import datetime as dt
@@ -15,7 +16,11 @@ def test_every_ms_schedules_future():
 
 
 def test_at_past_returns_none():
-    past = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1)).isoformat().replace("+00:00", "Z")
+    past = (
+        (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1))
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
     sched = {"kind": "at", "at": past}
     now = int(dt.datetime.now(dt.timezone.utc).timestamp() * 1000)
     assert compute_next_run_at_ms(sched, now) is None

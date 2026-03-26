@@ -1,24 +1,18 @@
 # Repository Guidelines
 
 - Repo: https://github.com/virattt/dexter
-- Dexter is a CLI-based AI agent for deep financial research, built with TypeScript, Ink (React for CLI), and LangChain.
+- Dexter is a CLI/HTTP-based AI agent for deep financial research, built in Python with Flask and LangChain.
 
 ## Project Structure
 
-- Source code: `src/`
-  - Agent core: `src/agent/` (agent loop, prompts, scratchpad, token counting, types)
-  - CLI interface: `src/cli.tsx` (Ink/React), entry point: `src/index.tsx`
-  - Components: `src/components/` (Ink UI components)
-  - Hooks: `src/hooks/` (React hooks for agent runner, model selection, input history)
-  - Model/LLM: `src/model/llm.ts` (multi-provider LLM abstraction)
-  - Tools: `src/tools/` (financial search, web search, browser, skill tool)
-  - Tool descriptions: `src/tools/descriptions/` (rich descriptions injected into system prompt)
-  - Finance tools: `src/tools/finance/` (prices, fundamentals, filings, insider trades, etc.)
-  - Search tools: `src/tools/search/` (Exa preferred, Tavily fallback)
-  - Browser: `src/tools/browser/` (Playwright-based web scraping)
-  - Skills: `src/skills/` (SKILL.md-based extensible workflows, e.g. DCF valuation)
-  - Utils: `src/utils/` (env, config, caching, token estimation, markdown tables)
-  - Evals: `src/evals/` (LangSmith evaluation runner with Ink UI)
+- Source code: `dexter_flask/`
+  - Flask app: `dexter_flask/app.py` + routes under `dexter_flask/routes/`
+  - Agent core: `dexter_flask/agent/` (loop, prompts, scratchpad, tool executor)
+  - LLM providers: `dexter_flask/llm/` + `dexter_flask/providers.py`
+  - Tools: `dexter_flask/tools/` (finance/search/fetch/browser/fs/memory/cron/skill)
+  - Skills: `dexter_flask/skills/builtin/` (SKILL.md-based workflows)
+  - Evals: `dexter_flask/evals/`
+  - CLI: `python -m dexter_flask ...` (`dexter_flask/cli.py`)
 - Config: `.dexter/settings.json` (persisted model/provider selection)
 - Environment: `.env` (API keys; see `env.example`)
 - Scripts: `scripts/release.sh`
@@ -26,15 +20,14 @@
 ## Build, Test, and Development Commands (Python-first)
 
 - Runtime: Python. Start the Flask service with `python -m dexter_flask.app`.
-- Install deps: `python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`
+- Install deps: `uv venv .venv && source .venv/bin/activate && uv sync --dev`
 - Run: `python -m dexter_flask.app`
 - Tests: `pytest`
 - Evals (end-to-end, optional judge): `python -m dexter_flask.evals.run --sample 10`
 
 ## Coding Style & Conventions
 
-- Language: TypeScript (ESM, strict mode). JSX via React (Ink for CLI rendering).
-- Prefer strict typing; avoid `any`.
+- Language: Python (3.10+)
 - Keep files concise; extract helpers rather than duplicating code.
 - Add brief comments for tricky or non-obvious logic.
 - Do not add logging unless explicitly asked.
@@ -43,10 +36,7 @@
 ## LLM Providers
 
 - Supported: OpenAI (default), Anthropic, Google, xAI (Grok), OpenRouter, Ollama (local).
-- Default model: `gpt-5.4`. Provider detection is prefix-based (`claude-` -> Anthropic, `gemini-` -> Google, etc.).
-- Fast models for lightweight tasks: see `FAST_MODELS` map in `src/model/llm.ts`.
-- Anthropic uses explicit `cache_control` on system prompt for prompt caching cost savings.
-- Users switch providers/models via `/model` command in the CLI.
+- Default model: `gpt-5.4`.
 
 ## Tools
 
@@ -56,19 +46,19 @@
 - `web_search`: general web search (Exa if `EXASEARCH_API_KEY` set, else Tavily if `TAVILY_API_KEY` set).
 - `browser`: Playwright-based web scraping for reading pages the agent discovers.
 - `skill`: invokes SKILL.md-defined workflows (e.g. DCF valuation). Each skill runs at most once per query.
-- Tool registry: `src/tools/registry.ts`. Tools are conditionally included based on env vars.
+- Tool registry: `dexter_flask/tools/registry.py`. Tools are conditionally included based on env vars.
 
 ## Skills
 
 - Skills live as `SKILL.md` files with YAML frontmatter (`name`, `description`) and markdown body (instructions).
-- Built-in skills: `src/skills/dcf/SKILL.md`.
-- Discovery: `src/skills/registry.ts` scans for SKILL.md files at startup.
+- Built-in skills: `dexter_flask/skills/builtin/**/SKILL.md`.
+- Discovery: `dexter_flask/skills/registry.py` scans for SKILL.md files at startup.
 - Skills are exposed to the LLM as metadata in the system prompt; the LLM invokes them via the `skill` tool.
 
 ## Agent Architecture
 
-- Agent loop: `src/agent/agent.ts`. Iterative tool-calling loop with configurable max iterations (default 10).
-- Scratchpad: `src/agent/scratchpad.ts`. Single source of truth for all tool results within a query.
+- Agent loop: `dexter_flask/agent/loop.py`. Iterative tool-calling loop with configurable max iterations (default 10).
+- Scratchpad: `dexter_flask/agent/scratchpad.py`. Single source of truth for all tool results within a query.
 - Context management: Anthropic-style. Full tool results kept in context; oldest results cleared when token threshold exceeded.
 - Final answer: generated in a separate LLM call with full scratchpad context (no tools bound).
 - Events: agent yields typed events (`tool_start`, `tool_end`, `thinking`, `answer_start`, `done`, etc.) for real-time UI updates.

@@ -1,4 +1,5 @@
 """Path helpers — mirror src/utils/paths.ts."""
+
 from __future__ import annotations
 
 import os

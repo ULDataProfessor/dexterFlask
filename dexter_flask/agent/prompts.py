@@ -1,4 +1,5 @@
 """System and iteration prompts — mirror src/agent/prompts.ts."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -42,7 +43,11 @@ def _build_skills_section() -> str:
 
 def _build_memory_section(memory_files: list[str], memory_context: str | None) -> str:
     fl = f"\nMemory files on disk: {', '.join(memory_files)}" if memory_files else ""
-    ctx = f"\n\n### What you know about the user\n\n{memory_context}" if memory_context else ""
+    ctx = (
+        f"\n\n### What you know about the user\n\n{memory_context}"
+        if memory_context
+        else ""
+    )
     return f"""## Memory
 
 You have persistent memory stored as Markdown files in .dexter/memory/.{fl}{ctx}
@@ -58,7 +63,9 @@ Use **memory_update** to add, edit, or delete memories. Do NOT use write_file fo
 def build_group_section(ctx: dict[str, Any]) -> str:
     lines = ["## Group Chat", ""]
     if ctx.get("groupName"):
-        lines.append(f'You are participating in the WhatsApp group "{ctx["groupName"]}".')
+        lines.append(
+            f'You are participating in the WhatsApp group "{ctx["groupName"]}".'
+        )
     else:
         lines.append("You are participating in a WhatsApp group chat.")
     lines.extend(
@@ -111,7 +118,9 @@ def build_system_prompt(
     behavior_bullets = "\n".join(f"- {b}" for b in profile.behavior)
     format_bullets = "\n".join(f"- {b}" for b in profile.response_format)
     tables_section = (
-        f"\n## Tables (for comparative/tabular data)\n\n{profile.tables}" if profile.tables else ""
+        f"\n## Tables (for comparative/tabular data)\n\n{profile.tables}"
+        if profile.tables
+        else ""
     )
     mf = memory_files or []
     soul_block = ""

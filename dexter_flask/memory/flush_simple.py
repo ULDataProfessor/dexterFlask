@@ -1,4 +1,5 @@
 """Pre-compaction memory flush — mirror src/memory/flush.ts."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -29,9 +30,7 @@ def _text(resp: AIMessage | str) -> str:
     if isinstance(c, str):
         return c
     if isinstance(c, list):
-        return "".join(
-            b.get("text", "") if isinstance(b, dict) else str(b) for b in c
-        )
+        return "".join(b.get("text", "") if isinstance(b, dict) else str(b) for b in c)
     return str(c)
 
 
@@ -60,7 +59,9 @@ def maybe_memory_flush(
 
             from dexter_flask.memory.manager import MemoryManager
 
-            MemoryManager.get().append_daily_memory(f"## Pre-compaction memory flush\n{text}")
+            MemoryManager.get().append_daily_memory(
+                f"## Pre-compaction memory flush\n{text}"
+            )
             written = [datetime.now().strftime("%Y-%m-%d") + ".md"]
         except Exception:
             pass

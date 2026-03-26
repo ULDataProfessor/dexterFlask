@@ -1,4 +1,5 @@
 """Memory file store — mirror src/memory/store.ts."""
+
 from __future__ import annotations
 
 import re
@@ -75,7 +76,9 @@ class MemoryStore:
                 out.append(p.name)
         return sorted(out)
 
-    def read_lines(self, path: str, from_line: int | None, max_lines: int | None) -> dict:
+    def read_lines(
+        self, path: str, from_line: int | None, max_lines: int | None
+    ) -> dict:
         text = self.read_file(path)
         if not text:
             return {"path": path, "text": ""}

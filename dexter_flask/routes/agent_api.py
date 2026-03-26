@@ -1,4 +1,5 @@
 """Agent HTTP API — mirror gateway AgentRunRequest."""
+
 from __future__ import annotations
 
 from collections import deque
@@ -190,7 +191,10 @@ def api_agent_approval():
     try:
         parsed = ApprovalBody.model_validate(body)
     except Exception:
-        return {"error": "invalid_request", "details": "Invalid approval request body"}, 400
+        return {
+            "error": "invalid_request",
+            "details": "Invalid approval request body",
+        }, 400
 
     run_id = parsed.runId
     decision = str(parsed.decision)
@@ -199,7 +203,10 @@ def api_agent_approval():
         return {"error": "invalid_run_id", "details": "Unknown or expired runId"}, 404
 
     if decision not in ("allow-once", "allow-session", "deny"):
-        return {"error": "invalid_decision", "details": "Decision must be allow-once, allow-session, or deny"}, 400
+        return {
+            "error": "invalid_decision",
+            "details": "Decision must be allow-once, allow-session, or deny",
+        }, 400
 
     st.set_decision(decision)
     return {"ok": True}
@@ -215,7 +222,10 @@ def api_agent_cancel():
     try:
         parsed = CancelBody.model_validate(body)
     except Exception:
-        return {"error": "invalid_request", "details": "Invalid cancel request body"}, 400
+        return {
+            "error": "invalid_request",
+            "details": "Invalid cancel request body",
+        }, 400
 
     run_id = parsed.runId
     st = _approval_states.get(run_id)

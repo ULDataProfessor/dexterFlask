@@ -1,4 +1,5 @@
 """Cron management tool — mirror cron-tool.ts."""
+
 from __future__ import annotations
 
 import secrets
@@ -12,7 +13,9 @@ from dexter_flask.cron_pkg.executor import execute_cron_job
 from dexter_flask.cron_pkg.schedule import compute_next_run_at_ms
 from dexter_flask.cron_pkg.store import load_cron_store, save_cron_store
 
-CRON_TOOL_DESCRIPTION = "Create, list, update, remove, or run scheduled jobs (see cron-tool.ts)."
+CRON_TOOL_DESCRIPTION = (
+    "Create, list, update, remove, or run scheduled jobs (see cron-tool.ts)."
+)
 
 
 class CronIn(BaseModel):
@@ -86,7 +89,11 @@ def _cron(inp: CronIn) -> str:
                 "modelProvider": inp.modelProvider,
             },
             "fulfillment": inp.fulfillment or "keep",
-            "state": {"nextRunAtMs": nxt, "consecutiveErrors": 0, "scheduleErrorCount": 0},
+            "state": {
+                "nextRunAtMs": nxt,
+                "consecutiveErrors": 0,
+                "scheduleErrorCount": 0,
+            },
         }
         store.setdefault("jobs", []).append(job)
         save_cron_store(store)
@@ -105,7 +112,9 @@ def _cron(inp: CronIn) -> str:
             job["description"] = inp.description
         if inp.schedule is not None:
             job["schedule"] = inp.schedule
-            job.setdefault("state", {})["nextRunAtMs"] = compute_next_run_at_ms(inp.schedule, int(time.time() * 1000))
+            job.setdefault("state", {})["nextRunAtMs"] = compute_next_run_at_ms(
+                inp.schedule, int(time.time() * 1000)
+            )
             job["state"]["scheduleErrorCount"] = 0
         pl = job.setdefault("payload", {})
         if inp.message is not None:
@@ -119,7 +128,9 @@ def _cron(inp: CronIn) -> str:
         if inp.enabled is not None:
             job["enabled"] = inp.enabled
             if inp.enabled and not job.get("state", {}).get("nextRunAtMs"):
-                job["state"]["nextRunAtMs"] = compute_next_run_at_ms(job["schedule"], int(time.time() * 1000))
+                job["state"]["nextRunAtMs"] = compute_next_run_at_ms(
+                    job["schedule"], int(time.time() * 1000)
+                )
         job["updatedAtMs"] = int(time.time() * 1000)
         save_cron_store(store)
         return f"Updated job {inp.jobId}."
@@ -150,4 +161,6 @@ def _cron(inp: CronIn) -> str:
 
 
 def cron_tool_fn() -> StructuredTool:
-    return StructuredTool.from_function(name="cron", description=CRON_TOOL_DESCRIPTION, func=_cron, args_schema=CronIn)
+    return StructuredTool.from_function(
+        name="cron", description=CRON_TOOL_DESCRIPTION, func=_cron, args_schema=CronIn
+    )

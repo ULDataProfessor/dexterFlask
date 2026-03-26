@@ -1,4 +1,5 @@
 """Heartbeat query builder — mirror src/gateway/heartbeat/prompt.ts."""
+
 from __future__ import annotations
 
 import re

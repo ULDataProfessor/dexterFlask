@@ -1,4 +1,5 @@
 """read_filings meta-tool — mirror src/tools/finance/read-filings.ts."""
+
 from __future__ import annotations
 
 import json
@@ -38,7 +39,9 @@ Return ticker, filing_types, limit for the user query.
 Resolve company names to tickers. Choose filing types appropriately. Default limit 10."""
 
 
-def _step2_prompt(user_query: str, filings_data: list, item_types: dict[str, Any]) -> str:
+def _step2_prompt(
+    user_query: str, filings_data: list, item_types: dict[str, Any]
+) -> str:
     q = user_query.replace("{", "{{").replace("}", "}}")
     fd = json.dumps(filings_data, indent=2).replace("{", "{{").replace("}", "}}")
     it = json.dumps(item_types, indent=2).replace("{", "{{").replace("}", "}}")
@@ -78,9 +81,15 @@ def create_read_filings_tool(model: str) -> StructuredTool:
                 system_prompt=_plan_prompt(),
                 schema=FilingPlan,
             )
-            plan = plan_raw if isinstance(plan_raw, FilingPlan) else FilingPlan.model_validate(plan_raw)
+            plan = (
+                plan_raw
+                if isinstance(plan_raw, FilingPlan)
+                else FilingPlan.model_validate(plan_raw)
+            )
         except Exception as e:
-            return format_tool_result({"error": "Failed to plan filing search", "details": str(e)}, [])
+            return format_tool_result(
+                {"error": "Failed to plan filing search", "details": str(e)}, []
+            )
 
         emit_tool_progress(f"Fetching filings for {plan.ticker}...")
         try:
@@ -93,9 +102,13 @@ def create_read_filings_tool(model: str) -> StructuredTool:
             )
             item_types = get_filing_item_types()
         except Exception as e:
-            return format_tool_result({"error": "Failed to fetch filings metadata", "details": str(e)}, [])
+            return format_tool_result(
+                {"error": "Failed to fetch filings metadata", "details": str(e)}, []
+            )
 
-        parsed = json.loads(filings_raw) if isinstance(filings_raw, str) else filings_raw
+        parsed = (
+            json.loads(filings_raw) if isinstance(filings_raw, str) else filings_raw
+        )
         filings_list = parsed.get("data") if isinstance(parsed, dict) else []
         source_urls = parsed.get("sourceUrls") if isinstance(parsed, dict) else []
         if not isinstance(filings_list, list):
@@ -117,7 +130,10 @@ def create_read_filings_tool(model: str) -> StructuredTool:
         )
         if not isinstance(resp, AIMessage) or not resp.tool_calls:
             return format_tool_result(
-                {"error": "Failed to select filings to read", "availableFilings": filings_list},
+                {
+                    "error": "Failed to select filings to read",
+                    "availableFilings": filings_list,
+                },
                 source_urls,
             )
 
@@ -149,7 +165,9 @@ def create_read_filings_tool(model: str) -> StructuredTool:
                 if err:
                     errors.append({"tool": name, "args": args, "error": err})
                 else:
-                    acc = args.get("accession_number") if isinstance(args, dict) else None
+                    acc = (
+                        args.get("accession_number") if isinstance(args, dict) else None
+                    )
                     key = acc or f"{name}_{len(combined)}"
                     combined[key] = data
         if errors:

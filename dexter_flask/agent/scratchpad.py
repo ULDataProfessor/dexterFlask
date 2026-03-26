@@ -1,4 +1,5 @@
 """Scratchpad — mirror src/agent/scratchpad.ts."""
+
 from __future__ import annotations
 
 import hashlib
@@ -54,7 +55,11 @@ class Scratchpad:
 
     def add_thinking(self, thought: str) -> None:
         self._append(
-            {"type": "thinking", "content": thought, "timestamp": datetime.now(timezone.utc).isoformat()}
+            {
+                "type": "thinking",
+                "content": thought,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
         )
 
     def _parse_result_safely(self, result: str) -> Any:
@@ -97,7 +102,9 @@ class Scratchpad:
                 return pq
         return None
 
-    def can_call_tool(self, tool_name: str, query: str | None = None) -> tuple[bool, str | None]:
+    def can_call_tool(
+        self, tool_name: str, query: str | None = None
+    ) -> tuple[bool, str | None]:
         c = self._tool_counts.get(tool_name, 0)
         if c >= self._max_calls:
             return (
@@ -129,7 +136,11 @@ class Scratchpad:
         lines = []
         for name, cnt in self._tool_counts.items():
             mx = self._max_calls
-            status = f"{cnt} calls (over suggested limit)" if cnt >= mx else f"{cnt}/{mx} calls"
+            status = (
+                f"{cnt} calls (over suggested limit)"
+                if cnt >= mx
+                else f"{cnt}/{mx} calls"
+            )
             lines.append(f"- {name}: {status}")
         return "## Tool Usage This Query\n\n" + "\n".join(lines) + "\n\n"
 

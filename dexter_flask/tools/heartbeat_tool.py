@@ -1,4 +1,5 @@
 """Heartbeat checklist tool — mirror heartbeat-tool.ts."""
+
 from __future__ import annotations
 
 import time
@@ -55,10 +56,15 @@ def _heartbeat(inp: HbIn) -> str:
     return 'Unknown action. Use "view" or "update".'
 
 
-HEARTBEAT_TOOL_DESCRIPTION = "View or update .dexter/HEARTBEAT.md periodic monitoring checklist."
+HEARTBEAT_TOOL_DESCRIPTION = (
+    "View or update .dexter/HEARTBEAT.md periodic monitoring checklist."
+)
 
 
 def heartbeat_tool_fn() -> StructuredTool:
     return StructuredTool.from_function(
-        name="heartbeat", description=HEARTBEAT_TOOL_DESCRIPTION, func=_heartbeat, args_schema=HbIn
+        name="heartbeat",
+        description=HEARTBEAT_TOOL_DESCRIPTION,
+        func=_heartbeat,
+        args_schema=HbIn,
     )

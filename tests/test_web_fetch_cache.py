@@ -45,4 +45,3 @@ def test_web_fetch_caches_by_url_params(monkeypatch) -> None:
 
     assert out1 == out2
     assert calls["n"] == 1
-

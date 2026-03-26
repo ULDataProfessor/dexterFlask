@@ -1,4 +1,5 @@
 """Per-session chat history for API/gateway."""
+
 from __future__ import annotations
 
 from dexter_flask.agent.chat_history import InMemoryChatHistory

@@ -1,4 +1,5 @@
 """Tool execution — mirror src/agent/tool-executor.ts."""
+
 from __future__ import annotations
 
 import inspect
@@ -35,7 +36,10 @@ class AgentToolExecutor:
             if isinstance(tc, dict):
                 name, args = tc.get("name") or "", tc.get("args") or {}
             else:
-                name, args = getattr(tc, "name", "") or "", getattr(tc, "args", None) or {}
+                name, args = (
+                    getattr(tc, "name", "") or "",
+                    getattr(tc, "args", None) or {},
+                )
             if not isinstance(args, dict):
                 args = {}
             yield from self._execute_single(name, args, ctx)
@@ -47,8 +51,13 @@ class AgentToolExecutor:
                 return v
         return None
 
-    def _resolve_approval(self, tool_name: str, tool_args: dict[str, Any]) -> ApprovalDecision:
-        if tool_name not in TOOLS_REQUIRING_APPROVAL or tool_name in self._session_approved:
+    def _resolve_approval(
+        self, tool_name: str, tool_args: dict[str, Any]
+    ) -> ApprovalDecision:
+        if (
+            tool_name not in TOOLS_REQUIRING_APPROVAL
+            or tool_name in self._session_approved
+        ):
             return "allow-once"
         if self._request_tool_approval is None:
             return "allow-once"
@@ -67,11 +76,19 @@ class AgentToolExecutor:
             # - emit a `tool_approval` *request* event first (no `approved` field)
             # - then block in `request_tool_approval` until the operator decision arrives
             # - finally emit the `tool_approval` decision event (with `approved`)
-            if self._request_tool_approval is not None and tool_name not in self._session_approved:
+            if (
+                self._request_tool_approval is not None
+                and tool_name not in self._session_approved
+            ):
                 yield {"type": "tool_approval", "tool": tool_name, "args": tool_args}
 
             decision = self._resolve_approval(tool_name, tool_args)
-            yield {"type": "tool_approval", "tool": tool_name, "args": tool_args, "approved": decision}
+            yield {
+                "type": "tool_approval",
+                "tool": tool_name,
+                "args": tool_args,
+                "approved": decision,
+            }
             if decision == "deny":
                 yield {"type": "tool_denied", "tool": tool_name, "args": tool_args}
                 return
@@ -80,7 +97,12 @@ class AgentToolExecutor:
 
         allowed, warning = ctx.scratchpad.can_call_tool(tool_name, tool_query)
         if warning:
-            yield {"type": "tool_limit", "tool": tool_name, "warning": warning, "blocked": False}
+            yield {
+                "type": "tool_limit",
+                "tool": tool_name,
+                "warning": warning,
+                "blocked": False,
+            }
 
         yield {"type": "tool_start", "tool": tool_name, "args": tool_args}
         t0 = time.time() * 1000
@@ -97,7 +119,13 @@ class AgentToolExecutor:
             raw = tool.invoke(tool_args)
             result = raw if isinstance(raw, str) else json.dumps(raw, default=str)
             dur = int(time.time() * 1000 - t0)
-            yield {"type": "tool_end", "tool": tool_name, "args": tool_args, "result": result, "duration": dur}
+            yield {
+                "type": "tool_end",
+                "tool": tool_name,
+                "args": tool_args,
+                "result": result,
+                "duration": dur,
+            }
             ctx.scratchpad.record_tool_call(tool_name, tool_query)
             ctx.scratchpad.add_tool_result(tool_name, tool_args, result)
         except Exception as e:

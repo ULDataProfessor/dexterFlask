@@ -29,4 +29,3 @@ def test_web_search_caches_provider_query(monkeypatch) -> None:
 
     assert out1 == out2
     assert calls["n"] == 1
-

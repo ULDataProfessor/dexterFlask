@@ -1,4 +1,5 @@
 """Provider registry — mirror src/providers.ts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,11 +16,17 @@ class ProviderDef:
 
 PROVIDERS: list[ProviderDef] = [
     ProviderDef("openai", "OpenAI", "", "OPENAI_API_KEY", "gpt-4.1"),
-    ProviderDef("anthropic", "Anthropic", "claude-", "ANTHROPIC_API_KEY", "claude-haiku-4-5"),
-    ProviderDef("google", "Google", "gemini-", "GOOGLE_API_KEY", "gemini-3-flash-preview"),
+    ProviderDef(
+        "anthropic", "Anthropic", "claude-", "ANTHROPIC_API_KEY", "claude-haiku-4-5"
+    ),
+    ProviderDef(
+        "google", "Google", "gemini-", "GOOGLE_API_KEY", "gemini-3-flash-preview"
+    ),
     ProviderDef("xai", "xAI", "grok-", "XAI_API_KEY", "grok-4-1-fast-reasoning"),
     ProviderDef("moonshot", "Moonshot", "kimi-", "MOONSHOT_API_KEY", "kimi-k2-5"),
-    ProviderDef("deepseek", "DeepSeek", "deepseek-", "DEEPSEEK_API_KEY", "deepseek-chat"),
+    ProviderDef(
+        "deepseek", "DeepSeek", "deepseek-", "DEEPSEEK_API_KEY", "deepseek-chat"
+    ),
     ProviderDef(
         "openrouter",
         "OpenRouter",

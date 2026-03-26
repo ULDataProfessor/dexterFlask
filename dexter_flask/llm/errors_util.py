@@ -1,4 +1,5 @@
 """Error classification — mirror src/utils/errors.ts (subset)."""
+
 from __future__ import annotations
 
 import re

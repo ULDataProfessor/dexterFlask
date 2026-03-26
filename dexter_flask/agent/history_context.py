@@ -1,4 +1,5 @@
 """History context formatting — mirror src/utils/history-context.ts."""
+
 from __future__ import annotations
 
 HISTORY_CONTEXT_MARKER = "[Chat history for context]"
@@ -16,7 +17,8 @@ def build_history_context(
     if not entries:
         return current_message
     history_text = (line_break * 2).join(
-        f"{'User' if e['role'] == 'user' else 'Assistant'}: {e['content']}" for e in entries
+        f"{'User' if e['role'] == 'user' else 'Assistant'}: {e['content']}"
+        for e in entries
     )
     return line_break.join(
         [

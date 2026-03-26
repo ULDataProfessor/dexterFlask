@@ -1,4 +1,5 @@
 """API response cache — mirror src/utils/cache.ts (subset)."""
+
 from __future__ import annotations
 
 import hashlib

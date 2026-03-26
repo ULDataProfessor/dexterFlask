@@ -1,4 +1,5 @@
 """Background APScheduler tick for cron jobs."""
+
 from __future__ import annotations
 
 import time
@@ -35,5 +36,7 @@ def start_cron_scheduler() -> None:
     if _scheduler is not None:
         return
     _scheduler = BackgroundScheduler()
-    _scheduler.add_job(_tick, "interval", seconds=30, id="dexter_cron", replace_existing=True)
+    _scheduler.add_job(
+        _tick, "interval", seconds=30, id="dexter_cron", replace_existing=True
+    )
     _scheduler.start()

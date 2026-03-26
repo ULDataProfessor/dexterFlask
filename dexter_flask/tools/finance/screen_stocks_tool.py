@@ -1,4 +1,5 @@
 """Stock screener — mirror src/tools/finance/screen-stocks.ts."""
+
 from __future__ import annotations
 
 import json
@@ -62,7 +63,9 @@ def create_screen_stocks_tool(model: str) -> StructuredTool:
         try:
             metrics = _get_screener_filters()
         except Exception as e:
-            return format_tool_result({"error": "Failed to fetch screener metrics", "details": str(e)}, [])
+            return format_tool_result(
+                {"error": "Failed to fetch screener metrics", "details": str(e)}, []
+            )
         emit_tool_progress("Building screening criteria...")
         try:
             payload = call_llm_structured(
@@ -71,9 +74,15 @@ def create_screen_stocks_tool(model: str) -> StructuredTool:
                 system_prompt=_prompt(metrics),
                 schema=ScreenerPayload,
             )
-            pl = payload if isinstance(payload, ScreenerPayload) else ScreenerPayload.model_validate(payload)
+            pl = (
+                payload
+                if isinstance(payload, ScreenerPayload)
+                else ScreenerPayload.model_validate(payload)
+            )
         except Exception as e:
-            return format_tool_result({"error": "Failed to parse screening criteria", "details": str(e)}, [])
+            return format_tool_result(
+                {"error": "Failed to parse screening criteria", "details": str(e)}, []
+            )
         emit_tool_progress("Screening stocks...")
         body = {
             "filters": [f.model_dump() for f in pl.filters],
@@ -86,7 +95,11 @@ def create_screen_stocks_tool(model: str) -> StructuredTool:
             return format_tool_result(data, [url])
         except Exception as e:
             return format_tool_result(
-                {"error": "Screener request failed", "details": str(e), "filters": body["filters"]},
+                {
+                    "error": "Screener request failed",
+                    "details": str(e),
+                    "filters": body["filters"],
+                },
                 [],
             )
 

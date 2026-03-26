@@ -1,4 +1,5 @@
 """Web search — Exa / Tavily."""
+
 from __future__ import annotations
 
 import json
@@ -55,11 +56,7 @@ def _exa(q: str) -> str:
         )
         r.raise_for_status()
         data = r.json()
-    urls = [
-        h.get("url", "")
-        for h in data.get("results", [])
-        if isinstance(h, dict)
-    ]
+    urls = [h.get("url", "") for h in data.get("results", []) if isinstance(h, dict)]
     return format_tool_result(data, [u for u in urls if u])
 
 
@@ -89,9 +86,7 @@ def _web_search(inp: SearchIn) -> str:
     return format_tool_result({"error": "No search API key configured"}, [])
 
 
-WEB_SEARCH_DESCRIPTION = (
-    "Search the web for current information (Exa or Tavily)."
-)
+WEB_SEARCH_DESCRIPTION = "Search the web for current information (Exa or Tavily)."
 
 
 def web_search_tool() -> StructuredTool | None:

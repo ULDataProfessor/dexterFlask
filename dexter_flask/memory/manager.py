@@ -1,4 +1,5 @@
 """Memory manager for persistent notes (keyword/BM25 search)."""
+
 from __future__ import annotations
 
 import re
@@ -151,7 +152,9 @@ class MemoryManager:
                 # When there's only one indexed document, BM25 can return a
                 # constant score; treat any token overlap as a hit.
                 snippet_lower = snippet.lower()
-                norm_bm25 = 1.0 if any(t in snippet_lower for t in query_tokens) else 0.0
+                norm_bm25 = (
+                    1.0 if any(t in snippet_lower for t in query_tokens) else 0.0
+                )
 
             fuzzy_bonus = 0.0
             if fuzz:

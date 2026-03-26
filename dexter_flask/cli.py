@@ -68,9 +68,7 @@ def main(argv: list[str] | None = None) -> int:
 
     run_p = sub.add_parser("run", help="Run agent to completion (non-streaming)")
     run_p.add_argument("--query", "-q", required=True, help="User question")
-    run_p.add_argument(
-        "--model", default=os.environ.get("DEXTER_MODEL", "gpt-5.4")
-    )
+    run_p.add_argument("--model", default=os.environ.get("DEXTER_MODEL", "gpt-5.4"))
     run_p.add_argument(
         "--provider", default=os.environ.get("DEXTER_PROVIDER", "openai")
     )
@@ -83,9 +81,7 @@ def main(argv: list[str] | None = None) -> int:
 
     stream_p = sub.add_parser("stream", help="Run agent with event streaming")
     stream_p.add_argument("--query", "-q", required=True, help="User question")
-    stream_p.add_argument(
-        "--model", default=os.environ.get("DEXTER_MODEL", "gpt-5.4")
-    )
+    stream_p.add_argument("--model", default=os.environ.get("DEXTER_MODEL", "gpt-5.4"))
     stream_p.add_argument(
         "--provider", default=os.environ.get("DEXTER_PROVIDER", "openai")
     )
@@ -100,10 +96,10 @@ def main(argv: list[str] | None = None) -> int:
     eval_p = sub.add_parser(
         "eval", help="Run a small evaluation over finance_agent.csv"
     )
-    eval_p.add_argument("--sample", type=int, default=5, help="Number of questions to run")
     eval_p.add_argument(
-        "--model", default=os.environ.get("DEXTER_MODEL", "gpt-5.4")
+        "--sample", type=int, default=5, help="Number of questions to run"
     )
+    eval_p.add_argument("--model", default=os.environ.get("DEXTER_MODEL", "gpt-5.4"))
     eval_p.add_argument(
         "--provider", default=os.environ.get("DEXTER_PROVIDER", "openai")
     )

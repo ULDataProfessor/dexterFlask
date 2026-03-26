@@ -6,9 +6,7 @@ def test_api_agent_run_returns_answer(monkeypatch) -> None:
     from dexter_flask.app import create_app
     from dexter_flask.routes import agent_api
 
-    monkeypatch.setattr(
-        agent_api, "run_agent_for_message", lambda body: "ANSWER"
-    )
+    monkeypatch.setattr(agent_api, "run_agent_for_message", lambda body: "ANSWER")
 
     app = create_app()
     c = app.test_client()
@@ -90,9 +88,7 @@ class FakeHistory:
 
 
 class FakeAgent:
-    def run(
-        self, query: str, history: Any
-    ) -> Generator[dict[str, Any], None, None]:
+    def run(self, query: str, history: Any) -> Generator[dict[str, Any], None, None]:
         from dexter_flask.tools.context import emit_tool_progress
 
         yield {"type": "thinking", "message": "Thinking..."}

@@ -1,4 +1,5 @@
 """Token usage aggregation — mirror src/agent/token-counter.ts."""
+
 from __future__ import annotations
 
 from dexter_flask.agent.types import TokenUsage
@@ -17,7 +18,7 @@ class TokenCounter:
         self._output += int(usage.get("outputTokens", 0))
         self._total += int(usage.get("totalTokens", 0))
 
-    def get_usage(self) -> TokenUsage  | None:
+    def get_usage(self) -> TokenUsage | None:
         if self._total == 0 and self._input == 0 and self._output == 0:
             return None
         return TokenUsage(

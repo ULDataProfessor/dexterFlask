@@ -1,4 +1,5 @@
 """Skill discovery — mirror src/skills/registry.ts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

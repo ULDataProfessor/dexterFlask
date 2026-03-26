@@ -1,4 +1,5 @@
 """LLM invocation — mirror src/model/llm.ts."""
+
 from __future__ import annotations
 
 import time
@@ -59,7 +60,9 @@ def _with_retry(fn, provider_name: str, max_attempts: int = 3):
     raise last  # type: ignore[misc]
 
 
-def get_chat_model(model_name: str = DEFAULT_MODEL, streaming: bool = False) -> BaseChatModel:
+def get_chat_model(
+    model_name: str = DEFAULT_MODEL, streaming: bool = False
+) -> BaseChatModel:
     provider = resolve_provider(model_name)
     opts: dict[str, Any] = {"streaming": streaming}
 
@@ -106,7 +109,9 @@ def get_chat_model(model_name: str = DEFAULT_MODEL, streaming: bool = False) -> 
         )
     if provider.id == "ollama":
         if ChatOllama is None:
-            raise RuntimeError("langchain-community with ChatOllama is required for Ollama")
+            raise RuntimeError(
+                "langchain-community with ChatOllama is required for Ollama"
+            )
         base = get_settings().ollama_base_url or "http://127.0.0.1:11434"
         m = model_name.replace("ollama:", "", 1)
         return ChatOllama(model=m, base_url=base, **opts)
@@ -208,7 +213,11 @@ def call_llm(
         if isinstance(content, str):
             return content, usage
         if isinstance(content, list):
-            parts = [p.get("text", "") for p in content if isinstance(p, dict) and p.get("type") == "text"]
+            parts = [
+                p.get("text", "")
+                for p in content
+                if isinstance(p, dict) and p.get("type") == "text"
+            ]
             return "".join(parts), usage
     if not tools:
         return str(result), usage

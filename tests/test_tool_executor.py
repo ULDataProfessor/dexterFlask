@@ -26,7 +26,9 @@ def test_tool_executor_deny_approval_yields_tool_denied(monkeypatch) -> None:
     )
 
     events = list(executor.execute_all(resp, ctx))
-    assert any(e.get("type") == "tool_approval" and e.get("approved") == "deny" for e in events)
+    assert any(
+        e.get("type") == "tool_approval" and e.get("approved") == "deny" for e in events
+    )
     assert any(e.get("type") == "tool_denied" for e in events)
     assert not any(e.get("type") == "tool_start" for e in events)
 
@@ -82,9 +84,11 @@ def test_tool_executor_missing_tool_yields_tool_error_and_records_result() -> No
     )
 
     events = list(executor.execute_all(resp, ctx))
-    assert any(e.get("type") == "tool_error" and e.get("tool") == "missing_tool" for e in events)
+    assert any(
+        e.get("type") == "tool_error" and e.get("tool") == "missing_tool"
+        for e in events
+    )
 
     recs = ctx.scratchpad.get_tool_call_records()
     assert len(recs) == 1
     assert recs[0].tool == "missing_tool"
-

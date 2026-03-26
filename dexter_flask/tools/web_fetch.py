@@ -1,4 +1,5 @@
 """Fetch URL and extract readable text — mirror web-fetch.ts (subset)."""
+
 from __future__ import annotations
 
 import re
@@ -16,9 +17,7 @@ from dexter_flask.tools.format_util import format_tool_result
 
 class WebFetchIn(BaseModel):
     url: str = Field(description="HTTP(S) URL to fetch")
-    extractMode: str = Field(
-        default="markdown", description="markdown or text"
-    )
+    extractMode: str = Field(default="markdown", description="markdown or text")
     maxChars: int = Field(default=20_000)
 
 
@@ -73,9 +72,7 @@ def _fetch(inp: WebFetchIn) -> str:
     return out
 
 
-WEB_FETCH_DESCRIPTION = (
-    "Fetch a web page URL and return extracted readable content."
-)
+WEB_FETCH_DESCRIPTION = "Fetch a web page URL and return extracted readable content."
 
 
 def web_fetch_tool() -> StructuredTool:

@@ -1,4 +1,5 @@
 """Tool result formatting — mirror src/tools/types.ts."""
+
 from __future__ import annotations
 
 import json

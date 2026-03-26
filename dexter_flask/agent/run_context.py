@@ -1,4 +1,5 @@
 """Run context — mirror src/agent/run-context.ts."""
+
 from __future__ import annotations
 
 import time

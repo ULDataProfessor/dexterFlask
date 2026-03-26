@@ -1,4 +1,5 @@
 """Meta tools get_financials / get_market_data — mirror get-financials.ts / get-market-data.ts."""
+
 from __future__ import annotations
 
 import json
@@ -53,7 +54,9 @@ def _tc_parts(tc) -> tuple[str, dict]:
     return name, args if isinstance(args, dict) else {}
 
 
-def _run_router(query: str, model: str, system_prompt: str, tools: list[StructuredTool]) -> str:
+def _run_router(
+    query: str, model: str, system_prompt: str, tools: list[StructuredTool]
+) -> str:
     emit_tool_progress("Routing...")
     tool_map = {t.name: t for t in tools}
     resp, _ = call_llm(query, model=model, system_prompt=system_prompt, tools=tools)
@@ -74,7 +77,13 @@ def _run_router(query: str, model: str, system_prompt: str, tools: list[Structur
             raw = tool.invoke(args)
             parsed = json.loads(raw) if isinstance(raw, str) else raw
             if isinstance(parsed, dict):
-                return name, args, parsed.get("data"), parsed.get("sourceUrls") or [], None
+                return (
+                    name,
+                    args,
+                    parsed.get("data"),
+                    parsed.get("sourceUrls") or [],
+                    None,
+                )
             return name, args, parsed, [], None
         except Exception as e:
             return name, args, None, [], str(e)

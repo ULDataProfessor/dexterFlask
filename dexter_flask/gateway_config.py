@@ -1,4 +1,5 @@
 """Gateway config — mirror src/gateway/config.ts (subset)."""
+
 from __future__ import annotations
 
 import json

@@ -1,4 +1,5 @@
 """Cron types — mirror src/cron/types.ts."""
+
 from __future__ import annotations
 
 from typing import Literal, TypedDict

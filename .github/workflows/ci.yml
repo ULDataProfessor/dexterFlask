@@ -13,17 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -e ".[dev]"
+        run: uv sync --dev
 
       - name: Run pytest
         env:
           DEXTER_DISABLE_CRON: "1"
-        run: pytest -q
+        run: uv run pytest -q

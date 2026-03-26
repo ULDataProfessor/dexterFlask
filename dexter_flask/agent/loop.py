@@ -1,4 +1,5 @@
 """Agent iteration loop — mirror src/agent/agent.ts."""
+
 from __future__ import annotations
 
 import time
@@ -9,14 +10,25 @@ from langchain_core.messages import AIMessage
 
 from dexter_flask.agent.chat_history import InMemoryChatHistory
 from dexter_flask.agent.history_context import build_history_context
-from dexter_flask.agent.prompts import build_iteration_prompt, build_system_prompt, load_soul_document
+from dexter_flask.agent.prompts import (
+    build_iteration_prompt,
+    build_system_prompt,
+    load_soul_document,
+)
 from dexter_flask.agent.run_context import RunContext, create_run_context
 from dexter_flask.agent.token_counter import TokenCounter
 from dexter_flask.agent.tool_executor import AgentToolExecutor
-from dexter_flask.agent.tokens_util import CONTEXT_THRESHOLD, KEEP_TOOL_USES, estimate_tokens
+from dexter_flask.agent.tokens_util import (
+    CONTEXT_THRESHOLD,
+    KEEP_TOOL_USES,
+    estimate_tokens,
+)
 from dexter_flask.agent.types import AgentConfig
 from dexter_flask.llm.client import DEFAULT_MODEL, call_llm
-from dexter_flask.llm.errors_util import format_user_facing_error, is_context_overflow_error
+from dexter_flask.llm.errors_util import (
+    format_user_facing_error,
+    is_context_overflow_error,
+)
 from dexter_flask.memory.flush_simple import maybe_memory_flush
 from dexter_flask.providers import resolve_provider
 from dexter_flask.tools.registry import get_tools
@@ -122,8 +134,13 @@ class Agent:
     ) -> Any:
         """Yield event dicts (thinking, tool_*, done, context_cleared, memory_recalled, memory_flush)."""
         t0 = int(time.time() * 1000)
+
         def is_cancelled() -> bool:
-            return bool(self._cancel_requested and callable(self._cancel_requested) and self._cancel_requested())
+            return bool(
+                self._cancel_requested
+                and callable(self._cancel_requested)
+                and self._cancel_requested()
+            )
 
         if not self.tools:
             yield {
@@ -157,7 +174,9 @@ class Agent:
                 "tokensPerSecond": ctx.token_counter.get_tokens_per_second(total),
             }
             return
-        executor = AgentToolExecutor(self._tool_map, self._request_approval, self._session_approved)
+        executor = AgentToolExecutor(
+            self._tool_map, self._request_approval, self._session_approved
+        )
         current_prompt = self._initial_prompt(query, history)
         memory_flushed = False
         overflow_retries = 0
@@ -193,11 +212,18 @@ class Agent:
                     break
                 except Exception as e:
                     msg = str(e)
-                    if is_context_overflow_error(msg) and overflow_retries < max_overflow_retries:
+                    if (
+                        is_context_overflow_error(msg)
+                        and overflow_retries < max_overflow_retries
+                    ):
                         overflow_retries += 1
                         cleared = ctx.scratchpad.clear_oldest_tool_results(3)
                         if cleared > 0:
-                            yield {"type": "context_cleared", "clearedCount": cleared, "keptCount": 3}
+                            yield {
+                                "type": "context_cleared",
+                                "clearedCount": cleared,
+                                "keptCount": 3,
+                            }
                             current_prompt = build_iteration_prompt(
                                 query,
                                 ctx.scratchpad.get_tool_results(),
@@ -209,11 +235,15 @@ class Agent:
                     yield {
                         "type": "done",
                         "answer": f"Error: {format_user_facing_error(msg, provider)}",
-                        "toolCalls": [asdict(r) for r in ctx.scratchpad.get_tool_call_records()],
+                        "toolCalls": [
+                            asdict(r) for r in ctx.scratchpad.get_tool_call_records()
+                        ],
                         "iterations": ctx.iteration,
                         "totalTime": total,
                         "tokenUsage": ctx.token_counter.get_usage(),
-                        "tokensPerSecond": ctx.token_counter.get_tokens_per_second(total),
+                        "tokensPerSecond": ctx.token_counter.get_tokens_per_second(
+                            total
+                        ),
                     }
                     return
 
@@ -253,7 +283,9 @@ class Agent:
                         "iterations": ctx.iteration,
                         "totalTime": total,
                         "tokenUsage": ctx.token_counter.get_usage(),
-                        "tokensPerSecond": ctx.token_counter.get_tokens_per_second(total),
+                        "tokensPerSecond": ctx.token_counter.get_tokens_per_second(
+                            total
+                        ),
                     }
                     return
                 if ev.get("type") == "tool_denied":
@@ -268,7 +300,9 @@ class Agent:
                         "iterations": ctx.iteration,
                         "totalTime": total,
                         "tokenUsage": ctx.token_counter.get_usage(),
-                        "tokensPerSecond": ctx.token_counter.get_tokens_per_second(total),
+                        "tokensPerSecond": ctx.token_counter.get_tokens_per_second(
+                            total
+                        ),
                     }
                     return
 
@@ -287,7 +321,11 @@ class Agent:
             cleared = ctx.scratchpad.clear_oldest_tool_results(KEEP_TOOL_USES)
             if cleared > 0:
                 memory_flushed = False
-                yield {"type": "context_cleared", "clearedCount": cleared, "keptCount": KEEP_TOOL_USES}
+                yield {
+                    "type": "context_cleared",
+                    "clearedCount": cleared,
+                    "keptCount": KEEP_TOOL_USES,
+                }
 
             current_prompt = build_iteration_prompt(
                 query,

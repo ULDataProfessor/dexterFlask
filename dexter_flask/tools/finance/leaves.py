@@ -1,4 +1,5 @@
 """Leaf Financial Datasets tools — mirror src/tools/finance/*.ts."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -54,7 +55,9 @@ def _income(i: StmtIn) -> str:
 def _balance(i: StmtIn) -> str:
     api = get_api()
     data, url = api.get("/financials/balance-sheets/", _stmt_params(i))
-    return format_tool_result(strip_fields_deep(data.get("balance_sheets") or {}, RF), [url])
+    return format_tool_result(
+        strip_fields_deep(data.get("balance_sheets") or {}, RF), [url]
+    )
 
 
 def _cashflow(i: StmtIn) -> str:
@@ -68,7 +71,9 @@ def _cashflow(i: StmtIn) -> str:
 def _all_fin(i: StmtIn) -> str:
     api = get_api()
     data, url = api.get("/financials/", _stmt_params(i))
-    return format_tool_result(strip_fields_deep(data.get("financials") or {}, RF), [url])
+    return format_tool_result(
+        strip_fields_deep(data.get("financials") or {}, RF), [url]
+    )
 
 
 class EarnIn(BaseModel):
@@ -129,7 +134,9 @@ class EstIn(BaseModel):
 
 def _estimates(i: EstIn) -> str:
     api = get_api()
-    data, url = api.get("/analyst-estimates/", {"ticker": i.ticker.upper(), "period": i.period})
+    data, url = api.get(
+        "/analyst-estimates/", {"ticker": i.ticker.upper(), "period": i.period}
+    )
     return format_tool_result(data.get("analyst_estimates") or [], [url])
 
 
@@ -265,7 +272,9 @@ def _insider(i: InsiderIn) -> str:
         }
     )
     data, url = api.get("/insider-trades/", params)
-    return format_tool_result(strip_fields_deep(data.get("insider_trades") or [], RI), [url])
+    return format_tool_result(
+        strip_fields_deep(data.get("insider_trades") or [], RI), [url]
+    )
 
 
 class Empty(BaseModel):
@@ -274,36 +283,111 @@ class Empty(BaseModel):
 
 def finance_router_tools() -> list[StructuredTool]:
     return [
-        StructuredTool.from_function(name="get_income_statements", description="Income statements.", func=_income, args_schema=StmtIn),
-        StructuredTool.from_function(name="get_balance_sheets", description="Balance sheets.", func=_balance, args_schema=StmtIn),
-        StructuredTool.from_function(name="get_cash_flow_statements", description="Cash flow statements.", func=_cashflow, args_schema=StmtIn),
-        StructuredTool.from_function(name="get_all_financial_statements", description="All financial statements.", func=_all_fin, args_schema=StmtIn),
-        StructuredTool.from_function(name="get_earnings", description="Latest earnings snapshot.", func=_earnings_fix, args_schema=EarnIn),
-        StructuredTool.from_function(name="get_key_ratios", description="Financial metrics snapshot.", func=_key_ratios, args_schema=KeyIn),
-        StructuredTool.from_function(name="get_historical_key_ratios", description="Historical key ratios.", func=_hist_key, args_schema=HistKeyIn),
-        StructuredTool.from_function(name="get_analyst_estimates", description="Analyst estimates.", func=_estimates, args_schema=EstIn),
-        StructuredTool.from_function(name="get_segmented_revenues", description="Segmented revenues.", func=_segments, args_schema=SegIn),
+        StructuredTool.from_function(
+            name="get_income_statements",
+            description="Income statements.",
+            func=_income,
+            args_schema=StmtIn,
+        ),
+        StructuredTool.from_function(
+            name="get_balance_sheets",
+            description="Balance sheets.",
+            func=_balance,
+            args_schema=StmtIn,
+        ),
+        StructuredTool.from_function(
+            name="get_cash_flow_statements",
+            description="Cash flow statements.",
+            func=_cashflow,
+            args_schema=StmtIn,
+        ),
+        StructuredTool.from_function(
+            name="get_all_financial_statements",
+            description="All financial statements.",
+            func=_all_fin,
+            args_schema=StmtIn,
+        ),
+        StructuredTool.from_function(
+            name="get_earnings",
+            description="Latest earnings snapshot.",
+            func=_earnings_fix,
+            args_schema=EarnIn,
+        ),
+        StructuredTool.from_function(
+            name="get_key_ratios",
+            description="Financial metrics snapshot.",
+            func=_key_ratios,
+            args_schema=KeyIn,
+        ),
+        StructuredTool.from_function(
+            name="get_historical_key_ratios",
+            description="Historical key ratios.",
+            func=_hist_key,
+            args_schema=HistKeyIn,
+        ),
+        StructuredTool.from_function(
+            name="get_analyst_estimates",
+            description="Analyst estimates.",
+            func=_estimates,
+            args_schema=EstIn,
+        ),
+        StructuredTool.from_function(
+            name="get_segmented_revenues",
+            description="Segmented revenues.",
+            func=_segments,
+            args_schema=SegIn,
+        ),
     ]
 
 
 def market_router_tools() -> list[StructuredTool]:
     return [
-        StructuredTool.from_function(name="get_stock_price", description="Stock price snapshot.", func=_stock_snap, args_schema=SnapIn),
-        StructuredTool.from_function(name="get_stock_prices", description="Historical stock prices.", func=_stock_prices, args_schema=PricesIn),
+        StructuredTool.from_function(
+            name="get_stock_price",
+            description="Stock price snapshot.",
+            func=_stock_snap,
+            args_schema=SnapIn,
+        ),
+        StructuredTool.from_function(
+            name="get_stock_prices",
+            description="Historical stock prices.",
+            func=_stock_prices,
+            args_schema=PricesIn,
+        ),
         StructuredTool.from_function(
             name="get_available_stock_tickers",
             description="List stock tickers.",
             func=lambda **kw: _stock_tickers(kw),
             args_schema=Empty,
         ),
-        StructuredTool.from_function(name="get_crypto_price_snapshot", description="Crypto snapshot.", func=_crypto_snap, args_schema=CryptoSnapIn),
-        StructuredTool.from_function(name="get_crypto_prices", description="Historical crypto.", func=_crypto_prices, args_schema=CryptoPricesIn),
+        StructuredTool.from_function(
+            name="get_crypto_price_snapshot",
+            description="Crypto snapshot.",
+            func=_crypto_snap,
+            args_schema=CryptoSnapIn,
+        ),
+        StructuredTool.from_function(
+            name="get_crypto_prices",
+            description="Historical crypto.",
+            func=_crypto_prices,
+            args_schema=CryptoPricesIn,
+        ),
         StructuredTool.from_function(
             name="get_available_crypto_tickers",
             description="List crypto tickers.",
             func=lambda **kw: _crypto_tickers(kw),
             args_schema=Empty,
         ),
-        StructuredTool.from_function(name="get_company_news", description="Company news.", func=_news, args_schema=NewsIn),
-        StructuredTool.from_function(name="get_insider_trades", description="Insider trades.", func=_insider, args_schema=InsiderIn),
+        StructuredTool.from_function(
+            name="get_company_news",
+            description="Company news.",
+            func=_news,
+            args_schema=NewsIn,
+        ),
+        StructuredTool.from_function(
+            name="get_insider_trades",
+            description="Insider trades.",
+            func=_insider,
+            args_schema=InsiderIn,
+        ),
     ]

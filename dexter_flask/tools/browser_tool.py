@@ -1,4 +1,5 @@
 """Headless browser — Playwright subset for JS pages."""
+
 from __future__ import annotations
 
 from langchain_core.tools import StructuredTool
@@ -17,7 +18,12 @@ def _browser(inp: BrowserIn) -> str:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        return format_tool_result({"error": "playwright not installed; pip install playwright && playwright install chromium"}, [])
+        return format_tool_result(
+            {
+                "error": "playwright not installed; pip install playwright && playwright install chromium"
+            },
+            [],
+        )
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -29,13 +35,22 @@ def _browser(inp: BrowserIn) -> str:
                 browser.close()
                 return format_tool_result({"title": title, "text": text}, [inp.url])
             browser.close()
-            return format_tool_result({"error": "Unsupported action or missing url"}, [])
+            return format_tool_result(
+                {"error": "Unsupported action or missing url"}, []
+            )
     except Exception as e:
         return format_tool_result({"error": str(e)}, [])
 
 
-BROWSER_DESCRIPTION = "Use headless browser for JS-heavy pages: navigate to url and return page text."
+BROWSER_DESCRIPTION = (
+    "Use headless browser for JS-heavy pages: navigate to url and return page text."
+)
 
 
 def browser_tool_fn() -> StructuredTool:
-    return StructuredTool.from_function(name="browser", description=BROWSER_DESCRIPTION, func=_browser, args_schema=BrowserIn)
+    return StructuredTool.from_function(
+        name="browser",
+        description=BROWSER_DESCRIPTION,
+        func=_browser,
+        args_schema=BrowserIn,
+    )

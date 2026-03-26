@@ -1,4 +1,5 @@
 """Memory tools — mirror src/tools/memory/*.ts."""
+
 from __future__ import annotations
 
 from langchain_core.tools import StructuredTool
@@ -47,9 +48,7 @@ def _mem_upd(inp: MemUpdIn) -> str:
     m = MemoryManager.get()
     if inp.action == "append":
         if not inp.content:
-            return format_tool_result(
-                {"success": False, "error": "content required"}
-            )
+            return format_tool_result({"success": False, "error": "content required"})
         m.append_memory(inp.file, inp.content)
         return format_tool_result({"success": True, "file": inp.file})
     if inp.action == "edit":

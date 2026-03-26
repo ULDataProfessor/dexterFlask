@@ -1,4 +1,5 @@
 """Cron persistence — mirror src/cron/store.ts."""
+
 from __future__ import annotations
 
 import json

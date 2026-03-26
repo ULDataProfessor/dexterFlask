@@ -1,11 +1,15 @@
 """Tool registry — mirror src/tools/registry.ts."""
+
 from __future__ import annotations
 
 from langchain_core.tools import BaseTool
 
 from dexter_flask.tools.browser_tool import BROWSER_DESCRIPTION, browser_tool_fn
 from dexter_flask.tools.cron_tool import CRON_TOOL_DESCRIPTION, cron_tool_fn
-from dexter_flask.tools.finance.meta import create_get_financials_tool, create_get_market_data_tool
+from dexter_flask.tools.finance.meta import (
+    create_get_financials_tool,
+    create_get_market_data_tool,
+)
 from dexter_flask.tools.finance.read_filings_tool import create_read_filings_tool
 from dexter_flask.tools.finance.screen_stocks_tool import create_screen_stocks_tool
 from dexter_flask.tools.fs_tools import (
@@ -16,7 +20,10 @@ from dexter_flask.tools.fs_tools import (
     read_file_tool,
     write_file_tool,
 )
-from dexter_flask.tools.heartbeat_tool import HEARTBEAT_TOOL_DESCRIPTION, heartbeat_tool_fn
+from dexter_flask.tools.heartbeat_tool import (
+    HEARTBEAT_TOOL_DESCRIPTION,
+    heartbeat_tool_fn,
+)
 from dexter_flask.tools.memory_tools import (
     MEMORY_GET_DESCRIPTION,
     MEMORY_SEARCH_DESCRIPTION,
@@ -32,7 +39,9 @@ from dexter_flask.tools.x_search_tool import X_SEARCH_DESCRIPTION, x_search_tool
 
 # Rich descriptions for system prompt (abbreviated where tools are self-explanatory)
 GET_FINANCIALS_DESC = "Intelligent meta-tool for company financials, statements, ratios, estimates, segments. Pass full NL query once."
-GET_MARKET_DATA_DESC = "Intelligent meta-tool for stock/crypto prices, news, insider trades."
+GET_MARKET_DATA_DESC = (
+    "Intelligent meta-tool for stock/crypto prices, news, insider trades."
+)
 READ_FILINGS_DESC = "Read SEC 10-K/10-Q/8-K content from natural language."
 SCREEN_STOCKS_DESC = "Screen stocks by financial criteria from natural language."
 
@@ -71,4 +80,6 @@ def get_tools(model: str) -> list[BaseTool]:
 
 
 def build_tool_descriptions(model: str) -> str:
-    return "\n\n".join(f"### {name}\n\n{desc}" for name, _, desc in get_tool_registry(model))
+    return "\n\n".join(
+        f"### {name}\n\n{desc}" for name, _, desc in get_tool_registry(model)
+    )

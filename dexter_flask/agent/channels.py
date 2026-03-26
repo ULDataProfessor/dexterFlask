@@ -1,4 +1,5 @@
 """Channel profiles — mirror src/agent/channels.ts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

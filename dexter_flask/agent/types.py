@@ -1,4 +1,5 @@
 """Agent types — mirror src/agent/types.ts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

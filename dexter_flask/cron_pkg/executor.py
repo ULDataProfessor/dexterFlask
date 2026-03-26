@@ -1,4 +1,5 @@
 """Cron job execution (agent only; WhatsApp delivery stays in Node gateway)."""
+
 from __future__ import annotations
 
 import time
@@ -58,7 +59,9 @@ def execute_cron_job(job: dict[str, Any], store: dict[str, Any] | None = None) -
     except Exception as e:
         job.setdefault("state", {})["lastRunStatus"] = "error"
         job["state"]["lastError"] = str(e)
-        job["state"]["consecutiveErrors"] = int(job["state"].get("consecutiveErrors") or 0) + 1
+        job["state"]["consecutiveErrors"] = (
+            int(job["state"].get("consecutiveErrors") or 0) + 1
+        )
 
     job["state"]["lastRunAtMs"] = started
     job["state"]["lastDurationMs"] = int(time.time() * 1000) - started
