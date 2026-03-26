@@ -8,7 +8,7 @@ def test_tool_executor_deny_approval_yields_tool_denied(monkeypatch) -> None:
     from dexter_flask.agent.run_context import create_run_context
     from dexter_flask.agent.tool_executor import AgentToolExecutor
 
-    ctx = create_run_context("q")
+    ctx = create_run_context("q_deny")
 
     executor = AgentToolExecutor(
         tool_map={},
@@ -35,7 +35,7 @@ def test_tool_executor_tool_limit_approaching(monkeypatch) -> None:
     from dexter_flask.agent.run_context import create_run_context
     from dexter_flask.agent.tool_executor import AgentToolExecutor
 
-    ctx = create_run_context("q")
+    ctx = create_run_context("q_limit_approaching")
     # Default limit config allows 3 calls per tool; on the 3rd attempt, the executor should warn.
     ctx.scratchpad.record_tool_call("dummy")
     ctx.scratchpad.record_tool_call("dummy")
@@ -53,7 +53,7 @@ def test_tool_executor_tool_limit_similarity(monkeypatch) -> None:
     from dexter_flask.agent.run_context import create_run_context
     from dexter_flask.agent.tool_executor import AgentToolExecutor
 
-    ctx = create_run_context("q")
+    ctx = create_run_context("q_limit_similarity")
     ctx.scratchpad.record_tool_call("dummy", "How to buy apple stock")
 
     executor = AgentToolExecutor(tool_map={})
@@ -73,7 +73,7 @@ def test_tool_executor_missing_tool_yields_tool_error_and_records_result() -> No
     from dexter_flask.agent.run_context import create_run_context
     from dexter_flask.agent.tool_executor import AgentToolExecutor
 
-    ctx = create_run_context("q")
+    ctx = create_run_context("q_missing_tool")
     executor = AgentToolExecutor(tool_map={})
     resp = SimpleNamespace(
         tool_calls=[

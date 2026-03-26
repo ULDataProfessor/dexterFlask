@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from typing import Any, Generator
 
@@ -7,7 +6,9 @@ def test_api_agent_run_returns_answer(monkeypatch) -> None:
     from dexter_flask.app import create_app
     from dexter_flask.routes import agent_api
 
-    monkeypatch.setattr(agent_api, "run_agent_for_message", lambda body: "ANSWER")
+    monkeypatch.setattr(
+        agent_api, "run_agent_for_message", lambda body: "ANSWER"
+    )
 
     app = create_app()
     c = app.test_client()
@@ -37,9 +38,17 @@ class FakeHistory:
 
 
 class FakeAgent:
-    def run(self, query: str, history: Any) -> Generator[dict[str, Any], None, None]:
+    def run(
+        self, query: str, history: Any
+    ) -> Generator[dict[str, Any], None, None]:
         yield {"type": "thinking", "message": "Thinking..."}
-        yield {"type": "tool_end", "tool": "dummy", "args": {}, "result": "R", "duration": 0}
+        yield {
+            "type": "tool_end",
+            "tool": "dummy",
+            "args": {},
+            "result": "R",
+            "duration": 0,
+        }
         yield {
             "type": "done",
             "answer": "FINAL",
@@ -56,7 +65,11 @@ def test_api_agent_stream_sse_saves_history(monkeypatch) -> None:
     from dexter_flask.routes import agent_api
 
     hist = FakeHistory(user_queries=[], saved_answers=[])
-    monkeypatch.setattr(agent_api, "get_chat_history", lambda session_key, model: hist)
+
+    def fake_get_chat_history(session_key: str, model: str) -> FakeHistory:
+        return hist
+
+    monkeypatch.setattr(agent_api, "get_chat_history", fake_get_chat_history)
     monkeypatch.setattr(
         agent_api.Agent,
         "create",
@@ -92,7 +105,9 @@ def test_api_agent_stream_isolated_does_not_save_history(monkeypatch) -> None:
     from dexter_flask.routes import agent_api
 
     def boom(*_: object, **__: object) -> None:
-        raise AssertionError("get_chat_history should not be called for isolated sessions")
+        raise AssertionError(
+            "get_chat_history should not be called for isolated sessions"
+        )
 
     monkeypatch.setattr(agent_api, "get_chat_history", boom)
     monkeypatch.setattr(
@@ -114,4 +129,3 @@ def test_api_agent_stream_isolated_does_not_save_history(monkeypatch) -> None:
     assert r.status_code == 200
     body = r.data.decode("utf-8")
     assert '"type": "done"' in body
-

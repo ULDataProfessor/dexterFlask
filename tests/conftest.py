@@ -18,4 +18,3 @@ def _clear_sessions() -> None:
     except Exception:
         # If modules aren't importable yet, don't fail collection.
         pass
-
