@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-- Repo: https://github.com/virattt/dexter
+- Repo: `https://github.com/virattt/dexter`
 - Dexter is a CLI/HTTP-based AI agent for deep financial research, built in Python with Flask and LangChain.
 
 ## Project Structure
