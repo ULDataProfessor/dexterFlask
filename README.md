@@ -64,29 +64,10 @@ Dexter takes complex financial questions and turns them into clear, step-by-step
 
 ## ✅ Prerequisites
 
-- [Bun](https://bun.com) runtime (v1.0 or higher)
+- Python >= 3.10
 - OpenAI API key (get [here](https://platform.openai.com/api-keys))
 - Financial Datasets API key (get [here](https://financialdatasets.ai))
 - Exa API key (get [here](https://exa.ai)) - optional, for web search
-
-#### Installing Bun
-
-If you don't have Bun installed, you can install it using curl:
-
-**macOS/Linux:**
-```bash
-curl -fsSL https://bun.com/install | bash
-```
-
-**Windows:**
-```bash
-powershell -c "irm bun.sh/install.ps1|iex"
-```
-
-After installation, restart your terminal and verify Bun is installed:
-```bash
-bun --version
-```
 
 ## 💻 How to Install
 
@@ -96,9 +77,11 @@ git clone https://github.com/virattt/dexter.git
 cd dexter
 ```
 
-2. Install dependencies with Bun:
+2. Set up Python (virtualenv) and install deps:
 ```bash
-bun install
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
 ```
 
 3. Set up your environment variables:
@@ -126,19 +109,38 @@ cp env.example .env
 
 ## 🚀 How to Run
 
-Run Dexter in interactive mode:
+Run the Python/Flask server:
+```bash
+export PORT=5050
+export DEXTER_DISABLE_CRON=1
+python -m dexter_flask.app
+```
+
+Then hit:
+```bash
+curl -s http://127.0.0.1:5050/health
+```
+
+## Optional: Run the Bun gateway (terminal UI / WhatsApp)
+
+If you want the existing terminal UI and/or WhatsApp gateway, keep using Bun.
+
+Run the terminal UI:
 ```bash
 bun start
 ```
 
-Or with watch mode for development:
+For WhatsApp:
 ```bash
-bun dev
+bun run gateway:login
+bun run gateway
 ```
 
 ## 📊 How to Evaluate
 
-Dexter includes an evaluation suite that tests the agent against a dataset of financial questions. Evals use LangSmith for tracking and an LLM-as-judge approach for scoring correctness.
+The full evaluation suite currently lives in the Bun/TypeScript codebase.
+
+For Python/Flask parity, there is also a pytest suite (`tests/`) that covers the Flask routes and agent/tool execution plumbing without making external API calls.
 
 **Run on all questions:**
 ```bash
@@ -178,7 +180,13 @@ This makes it easy to inspect exactly what data the agent gathered and how it in
 
 ## 📱 How to Use with WhatsApp
 
-Chat with Dexter through WhatsApp by linking your phone to the gateway. Messages you send to yourself are processed by Dexter and responses are sent back to the same chat.
+Chat with Dexter through WhatsApp by linking your phone to the gateway. The gateway delegates agent execution to the Flask service.
+
+Start Flask first:
+```bash
+export DEXTER_DISABLE_CRON=1
+python -m dexter_flask.app
+```
 
 **Quick start:**
 ```bash
