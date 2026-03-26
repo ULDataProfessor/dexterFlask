@@ -6,6 +6,7 @@ Dexter is an autonomous financial research agent that thinks, plans, and learns 
 
 ## Table of Contents
 
+- [🐍 Python / Flask](#-python--flask)
 - [👋 Overview](#-overview)
 - [✅ Prerequisites](#-prerequisites)
 - [💻 How to Install](#-how-to-install)
@@ -15,6 +16,32 @@ Dexter is an autonomous financial research agent that thinks, plans, and learns 
 - [📱 How to Use with WhatsApp](#-how-to-use-with-whatsapp)
 - [🤝 How to Contribute](#-how-to-contribute)
 - [📄 License](#-license)
+
+## 🐍 Python / Flask
+
+The research agent is implemented in Python (`dexter_flask/`) with a Flask HTTP API, LangChain providers, Financial Datasets tools, memory, cron (APScheduler), and optional Exa/Tavily/X search.
+
+**Quick start**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+cp env.example .env           # add API keys
+python -m dexter_flask.app  # default http://127.0.0.1:5050
+```
+
+**Endpoints**
+
+- `GET /health` — liveness
+- `POST /api/agent/run` — JSON body: `sessionKey`, `query`, `model`, `modelProvider`, optional `maxIterations`, `isolatedSession`, `channel`, `groupContext`, `isHeartbeat`; returns `{ "answer": "..." }`
+- `POST /api/agent/stream` — same JSON body; `text/event-stream` with JSON `data:` lines mirroring agent events
+
+Set `DEXTER_DISABLE_CRON=1` to run without the background scheduler (e.g. in tests).
+
+**WhatsApp gateway:** run Flask, then set `FLASK_AGENT_URL=http://127.0.0.1:5050` (or `DEXTER_FLASK_URL`) in `.env`. The Bun gateway (`bun run gateway`) delegates `runAgentForMessage` to Flask via [src/gateway/flask-agent.ts](src/gateway/flask-agent.ts).
+
+The Bun/TypeScript project remains for the terminal UI (`bun start`), evals, and the Baileys WhatsApp client.
 
 
 ## 👋 Overview
