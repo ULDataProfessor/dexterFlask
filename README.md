@@ -21,6 +21,8 @@ Dexter is an autonomous financial research agent that thinks, plans, and learns 
 
 The research agent is implemented in Python (`dexter_flask/`) with a Flask HTTP API, LangChain providers, Financial Datasets tools, memory, cron (APScheduler), and optional Exa/Tavily/X search.
 
+More docs: `docs/PYTHON_QUICKSTART.md`, `docs/API.md`, `docs/DEV_AND_TESTING.md`, `docs/TODO.md`.
+
 **Quick start**
 
 ```bash
