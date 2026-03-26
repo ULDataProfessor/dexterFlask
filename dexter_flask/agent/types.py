@@ -63,7 +63,7 @@ class ToolLimitEvent(TypedDict):
     blocked: bool
 
 
-class ToolApprovalEvent(TypedDict):
+class ToolApprovalEvent(TypedDict, total=False):
     type: Literal["tool_approval"]
     tool: str
     args: dict[str, Any]

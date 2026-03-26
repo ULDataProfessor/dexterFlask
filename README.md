@@ -45,6 +45,39 @@ Set `DEXTER_DISABLE_CRON=1` to run without the background scheduler (e.g. in tes
 
 The Bun/TypeScript project remains for the terminal UI (`bun start`), evals, and the Baileys WhatsApp client.
 
+## 🧰 Python Port: Tooling & Added Tools
+
+The Flask service (`dexter_flask/`) is the core agent runtime. It registers a concrete set of tools that the agent can call during planning/execution (see `dexter_flask/tools/registry.py`).
+
+### Finance tools
+- `get_financials`: routes to income statements, balance sheets, cash flow, earnings, key ratios, analyst estimates, and segmented revenues.
+- `get_market_data`: routes to stock/crypto price snapshots + price history, available tickers, company news, and insider trades.
+- `read_filings`: plans which SEC filings to read, then reads specific 10-K / 10-Q / 8-K items.
+- `stock_screener`: converts natural-language criteria into screener filters and returns matching tickers.
+
+### Web + browsing
+- `web_fetch`: fetches a URL and returns extracted readable text (cached on disk).
+- `web_search` (optional): current web search via Exa or Tavily (cached on disk).
+- `x_search` (optional): recent public posts on X/Twitter (requires `X_BEARER_TOKEN`).
+- `browser`: headless Playwright helper for JS-heavy pages (returns page title + body text).
+
+### Memory + skills
+- `memory_search`: keyword/BM25 + fuzzy scoring over persistent memory files under `.dexter/memory/`.
+- `memory_get` / `memory_update`: read/edit append/delete memory file segments.
+- `skill` (optional): loads `SKILL.md`-based workflows from `dexter_flask/skills/`.
+
+### Filesystem sandbox + agent control
+- `read_file` / `write_file` / `edit_file`: sandboxed read/write/edit under `.dexter/workspace/` (prevents escaping to arbitrary paths).
+- `heartbeat`: view/update the monitoring checklist in `.dexter/HEARTBEAT.md`.
+- `cron`: create/list/update/remove/run scheduled jobs (persisted at `.dexter/cron/jobs.json`).
+
+### Persistent data locations
+- `.dexter/cache/`: disk cache for `web_fetch`, `web_search`, and selected financial-data endpoint results.
+- `.dexter/scratchpad/`: per-query JSONL trace of tool calls + agent thinking (also covered in “How to Debug” below).
+- `.dexter/memory/`: `MEMORY.md` plus daily memory files used for long-term recall.
+- `.dexter/workspace/`: sandbox root used by the filesystem tools.
+- `.dexter/cron/jobs.json`: cron scheduler persistence.
+
 
 ## 👋 Overview
 
@@ -65,9 +98,10 @@ Dexter takes complex financial questions and turns them into clear, step-by-step
 ## ✅ Prerequisites
 
 - Python >= 3.10
-- OpenAI API key (get [here](https://platform.openai.com/api-keys))
-- Financial Datasets API key (get [here](https://financialdatasets.ai))
-- Exa API key (get [here](https://exa.ai)) - optional, for web search
+- `FINANCIAL_DATASETS_API_KEY` (get [here](https://financialdatasets.ai))
+- LLM API key (set one of: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, or run with `OLLAMA_BASE_URL`)
+- Optional web search: `EXASEARCH_API_KEY` (preferred, get [here](https://exa.ai)) and/or `PERPLEXITY_API_KEY` / `TAVILY_API_KEY`
+- Optional X/Twitter search: `X_BEARER_TOKEN` (enables the `x_search` tool)
 
 ## 💻 How to Install
 
@@ -119,6 +153,13 @@ python -m dexter_flask.app
 Then hit:
 ```bash
 curl -s http://127.0.0.1:5050/health
+```
+
+Optional (production): run behind Gunicorn:
+```bash
+export PORT=5050
+# If you want the APScheduler background jobs enabled, do not set DEXTER_DISABLE_CRON=1
+gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT dexter_flask.app:app
 ```
 
 ## Optional: Run the Bun gateway (terminal UI / WhatsApp)

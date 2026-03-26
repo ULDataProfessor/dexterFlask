@@ -42,7 +42,10 @@ def _resolve_read_safe(file_path: str) -> Path:
 
 class ReadIn(BaseModel):
     filePath: str = Field(
-        description="Path to read. Relative paths are relative to .dexter/workspace; absolute paths must be inside the repo root."
+        description=(
+            "Path to read. Relative paths are relative to .dexter/workspace; "
+            "absolute paths must be inside the repo root."
+        )
     )
 
 
@@ -88,12 +91,27 @@ EDIT_FILE_DESCRIPTION = "Find-and-replace edit in .dexter/workspace."
 
 
 def read_file_tool() -> StructuredTool:
-    return StructuredTool.from_function(name="read_file", description=READ_FILE_DESCRIPTION, func=_read_file, args_schema=ReadIn)
+    return StructuredTool.from_function(
+        name="read_file",
+        description=READ_FILE_DESCRIPTION,
+        func=_read_file,
+        args_schema=ReadIn,
+    )
 
 
 def write_file_tool() -> StructuredTool:
-    return StructuredTool.from_function(name="write_file", description=WRITE_FILE_DESCRIPTION, func=_write_file, args_schema=WriteIn)
+    return StructuredTool.from_function(
+        name="write_file",
+        description=WRITE_FILE_DESCRIPTION,
+        func=_write_file,
+        args_schema=WriteIn,
+    )
 
 
 def edit_file_tool() -> StructuredTool:
-    return StructuredTool.from_function(name="edit_file", description=EDIT_FILE_DESCRIPTION, func=_edit_file, args_schema=EditIn)
+    return StructuredTool.from_function(
+        name="edit_file",
+        description=EDIT_FILE_DESCRIPTION,
+        func=_edit_file,
+        args_schema=EditIn,
+    )

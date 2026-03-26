@@ -63,6 +63,13 @@ class AgentToolExecutor:
     ) -> Generator[dict[str, Any], None, None]:
         tool_query = self._extract_query(tool_args)
         if tool_name in TOOLS_REQUIRING_APPROVAL:
+            # HTTP-driven approval flow:
+            # - emit a `tool_approval` *request* event first (no `approved` field)
+            # - then block in `request_tool_approval` until the operator decision arrives
+            # - finally emit the `tool_approval` decision event (with `approved`)
+            if self._request_tool_approval is not None and tool_name not in self._session_approved:
+                yield {"type": "tool_approval", "tool": tool_name, "args": tool_args}
+
             decision = self._resolve_approval(tool_name, tool_args)
             yield {"type": "tool_approval", "tool": tool_name, "args": tool_args, "approved": decision}
             if decision == "deny":
