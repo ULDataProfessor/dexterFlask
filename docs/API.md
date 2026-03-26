@@ -16,7 +16,7 @@ Response JSON:
 
 Runs the agent and returns the final answer once complete.
 
-### Request body (JSON)
+### Request body (JSON) (stream)
 
 Common fields (some are optional; server uses defaults when missing):
 
@@ -49,7 +49,7 @@ Runs the agent and streams events via Server-Sent Events (SSE).
 
 Same JSON shape as `/api/agent/run`.
 
-### Response
+### Response (stream)
 
 - `Content-Type: text/event-stream`
 - Event messages are streamed as:
@@ -59,6 +59,7 @@ Same JSON shape as `/api/agent/run`.
 Typical `event` objects include:
 
 - `type: "thinking"` (field: `message`)
+- `type: "tool_progress"` (fields: `tool`, `message`)
 - `type: "tool_start"` / `type: "tool_end"` / `type: "tool_error"`
 - `type: "tool_limit"`
 - `type: "context_cleared"`
@@ -82,3 +83,13 @@ The `done` event includes (when present):
 
 Unlike `/api/agent/run`, the current `/api/agent/stream` implementation does not yet apply heartbeat pruning logic.
 
+### Validation errors
+
+If the request JSON does not match the expected shape, the route returns:
+
+```json
+{
+  "error": "invalid_request",
+  "details": [ ... ]
+}
+```

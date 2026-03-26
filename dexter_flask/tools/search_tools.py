@@ -5,7 +5,7 @@ import json
 
 import httpx
 from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from dexter_flask.config import get_settings
 from dexter_flask.tools.cache_util import read_cache, write_cache
@@ -55,7 +55,11 @@ def _exa(q: str) -> str:
         )
         r.raise_for_status()
         data = r.json()
-    urls = [h.get("url", "") for h in data.get("results", []) if isinstance(h, dict)]
+    urls = [
+        h.get("url", "")
+        for h in data.get("results", [])
+        if isinstance(h, dict)
+    ]
     return format_tool_result(data, [u for u in urls if u])
 
 
@@ -85,7 +89,9 @@ def _web_search(inp: SearchIn) -> str:
     return format_tool_result({"error": "No search API key configured"}, [])
 
 
-WEB_SEARCH_DESCRIPTION = "Search the web for current information (Exa or Tavily)."
+WEB_SEARCH_DESCRIPTION = (
+    "Search the web for current information (Exa or Tavily)."
+)
 
 
 def web_search_tool() -> StructuredTool | None:
@@ -93,5 +99,8 @@ def web_search_tool() -> StructuredTool | None:
     if not s.exasearch_api_key and not s.tavily_api_key:
         return None
     return StructuredTool.from_function(
-        name="web_search", description=WEB_SEARCH_DESCRIPTION, func=_web_search, args_schema=SearchIn
+        name="web_search",
+        description=WEB_SEARCH_DESCRIPTION,
+        func=_web_search,
+        args_schema=SearchIn,
     )

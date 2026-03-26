@@ -16,7 +16,9 @@ from dexter_flask.tools.format_util import format_tool_result
 
 class WebFetchIn(BaseModel):
     url: str = Field(description="HTTP(S) URL to fetch")
-    extractMode: str = Field(default="markdown", description="markdown or text")
+    extractMode: str = Field(
+        default="markdown", description="markdown or text"
+    )
     maxChars: int = Field(default=20_000)
 
 
@@ -25,7 +27,11 @@ def _fetch(inp: WebFetchIn) -> str:
     if urlparse(u).scheme not in ("http", "https"):
         return format_tool_result({"error": "Only http/https URLs"}, [])
 
-    cache_params = {"url": u, "extractMode": inp.extractMode, "maxChars": inp.maxChars}
+    cache_params = {
+        "url": u,
+        "extractMode": inp.extractMode,
+        "maxChars": inp.maxChars,
+    }
     cached = read_cache("web_fetch", cache_params)
     if cached and isinstance(cached.get("data"), str):
         return cached["data"]
@@ -67,8 +73,15 @@ def _fetch(inp: WebFetchIn) -> str:
     return out
 
 
-WEB_FETCH_DESCRIPTION = "Fetch a web page URL and return extracted readable content."
+WEB_FETCH_DESCRIPTION = (
+    "Fetch a web page URL and return extracted readable content."
+)
 
 
 def web_fetch_tool() -> StructuredTool:
-    return StructuredTool.from_function(name="web_fetch", description=WEB_FETCH_DESCRIPTION, func=_fetch, args_schema=WebFetchIn)
+    return StructuredTool.from_function(
+        name="web_fetch",
+        description=WEB_FETCH_DESCRIPTION,
+        func=_fetch,
+        args_schema=WebFetchIn,
+    )

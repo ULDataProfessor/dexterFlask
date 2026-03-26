@@ -41,7 +41,10 @@ class FakeAgent:
     def run(
         self, query: str, history: Any
     ) -> Generator[dict[str, Any], None, None]:
+        from dexter_flask.tools.context import emit_tool_progress
+
         yield {"type": "thinking", "message": "Thinking..."}
+        emit_tool_progress("Running dummy...")
         yield {
             "type": "tool_end",
             "tool": "dummy",
@@ -92,6 +95,7 @@ def test_api_agent_stream_sse_saves_history(monkeypatch) -> None:
 
     body = r.data.decode("utf-8")
     assert "data:" in body
+    assert '"type": "tool_progress"' in body
     assert '"type": "done"' in body
     assert "FINAL" in body
 

@@ -37,7 +37,7 @@ python -m dexter_flask.app  # default http://127.0.0.1:5050
 
 - `GET /health` — liveness
 - `POST /api/agent/run` — JSON body: `sessionKey`, `query`, `model`, `modelProvider`, optional `maxIterations`, `isolatedSession`, `channel`, `groupContext`, `isHeartbeat`; returns `{ "answer": "..." }`
-- `POST /api/agent/stream` — same JSON body; `text/event-stream` with JSON `data:` lines mirroring agent events
+- `POST /api/agent/stream` — same JSON body; `text/event-stream` with JSON `data:` lines mirroring agent events (including `type: "tool_progress"`)
 
 Set `DEXTER_DISABLE_CRON=1` to run without the background scheduler (e.g. in tests).
 

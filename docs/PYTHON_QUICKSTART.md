@@ -79,6 +79,7 @@ curl -N -X POST http://127.0.0.1:5050/api/agent/stream \
 You’ll receive `text/event-stream` messages like:
 
 - `data: {"type":"thinking","message":"..."}`
+- `data: {"type":"tool_progress","tool":"...","message":"..."}`
 - `data: {"type":"tool_start", ...}`
 - `data: {"type":"done","answer":"..."}`
 
@@ -87,3 +88,7 @@ You’ll receive `text/event-stream` messages like:
 - `isolatedSession=true` disables persistent chat history and disables memory integration for the run.
 - Otherwise, chat history is kept in-process per `sessionKey` (not shared across multiple server processes).
 
+## Performance notes
+
+- `web_fetch` and `web_search` responses are cached on disk under `.dexter/cache/`.
+- Memory search uses BM25 + fuzzy scoring over memory files for better recall.

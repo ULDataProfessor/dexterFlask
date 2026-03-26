@@ -1,4 +1,4 @@
-"""Memory manager — simplified hybrid: keyword ranking over memory files (SQLite vector optional later)."""
+"""Memory manager for persistent notes (keyword/BM25 search)."""
 from __future__ import annotations
 
 import re
@@ -48,7 +48,9 @@ class MemoryManager:
             return format_daily_name()
         return file
 
-    def get(self, *, path: str, from_: int | None = None, lines: int | None = None) -> dict:
+    def read_lines_segment(
+        self, *, path: str, from_: int | None = None, lines: int | None = None
+    ) -> dict:
         return self._store.read_lines(path, from_, lines)
 
     def append_memory(self, file: str, content: str) -> None:
@@ -82,7 +84,16 @@ class MemoryManager:
                 if score <= 0:
                     continue
                 snippet = text[:500] + ("…" if len(text) > 500 else "")
-                results.append((float(score), {"file_path": name, "snippet": snippet, "score": score / len(query_tokens)}))
+                results.append(
+                    (
+                        float(score),
+                        {
+                            "file_path": name,
+                            "snippet": snippet,
+                            "score": score / len(query_tokens),
+                        },
+                    )
+                )
             results.sort(key=lambda x: -x[0])
             return [r[1] for r in results[:max_results]]
 
@@ -122,8 +133,10 @@ class MemoryManager:
             return []
 
         scores = self._bm25_bm25.get_scores(query_tokens)
-        max_score = max(float(s) for s in scores) if scores else 0.0
-        denom = max_score if max_score > 0 else 1.0
+        score_floats = [float(s) for s in scores] if scores else []
+        min_score = min(score_floats) if score_floats else 0.0
+        max_score = max(score_floats) if score_floats else 0.0
+        denom = max_score - min_score
 
         bonus_weight = 0.25
         results: list[tuple[float, dict[str, Any]]] = []
@@ -131,12 +144,19 @@ class MemoryManager:
             text = self._bm25_texts[i] if i < len(self._bm25_texts) else ""
             snippet = text[:500] + ("…" if len(text) > 500 else "")
 
-            bm25_score = float(scores[i]) if i < len(scores) else 0.0
-            norm_bm25 = bm25_score / denom if denom else 0.0
+            bm25_score = score_floats[i] if i < len(score_floats) else 0.0
+            if denom > 0:
+                norm_bm25 = (bm25_score - min_score) / denom
+            else:
+                # When there's only one indexed document, BM25 can return a
+                # constant score; treat any token overlap as a hit.
+                snippet_lower = snippet.lower()
+                norm_bm25 = 1.0 if any(t in snippet_lower for t in query_tokens) else 0.0
 
             fuzzy_bonus = 0.0
             if fuzz:
-                # Token-set fuzzy matching on query vs snippet tends to work well for short "recall".
+                # Token-set fuzzy matching on query vs snippet tends to work
+                # well for short "recall".
                 fuzzy_bonus = fuzz.token_set_ratio(query, snippet) / 100.0
 
             combined = norm_bm25 + bonus_weight * fuzzy_bonus

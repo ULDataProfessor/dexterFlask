@@ -15,12 +15,13 @@ export function isFlaskAgentEnabled(): boolean {
   return Boolean(flaskBaseUrl());
 }
 
-export async function runAgentViaFlask(req: AgentRunRequest): Promise<string> {
+async function runAgentViaFlaskStream(req: AgentRunRequest): Promise<string> {
   const base = flaskBaseUrl();
   if (!base) {
     throw new Error('Flask agent URL not configured');
   }
-  const r = await fetch(`${base}/api/agent/run`, {
+
+  const r = await fetch(`${base}/api/agent/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -34,11 +35,67 @@ export async function runAgentViaFlask(req: AgentRunRequest): Promise<string> {
       groupContext: req.groupContext,
       isHeartbeat: req.isHeartbeat,
     }),
+    signal: req.signal,
   });
+
   if (!r.ok) {
     const body = await r.text();
     throw new Error(`Flask agent error: ${r.status} ${body.slice(0, 500)}`);
   }
-  const j = (await r.json()) as { answer?: string };
-  return j.answer ?? '';
+
+  const textStream = r.body;
+  if (!textStream) return '';
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalAnswer = '';
+
+  const emitEvent = async (ev: unknown) => {
+    // The backend emits plain JSON event objects, not SSE "event:" frames.
+    if (!ev || typeof ev !== 'object') return;
+    await req.onEvent?.(ev as any);
+    const e = ev as { type?: string; answer?: unknown };
+    if (e.type === 'done' && typeof e.answer === 'string') {
+      finalAnswer = e.answer;
+    }
+  };
+
+  // Parse incremental `data: <json>\n\n` frames.
+  const reader = textStream.getReader();
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    while (true) {
+      const frameEnd = buffer.indexOf('\n\n');
+      if (frameEnd === -1) break;
+
+      const frame = buffer.slice(0, frameEnd);
+      buffer = buffer.slice(frameEnd + 2);
+
+      const dataLines = frame
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.startsWith('data:'));
+
+      for (const dl of dataLines) {
+        const payload = dl.replace(/^data:\s*/, '');
+        if (!payload) continue;
+        try {
+          const ev = JSON.parse(payload) as unknown;
+          await emitEvent(ev);
+        } catch {
+          // Ignore non-JSON frames defensively.
+        }
+      }
+    }
+  }
+
+  return finalAnswer;
+}
+
+export async function runAgentViaFlask(req: AgentRunRequest): Promise<string> {
+  return runAgentViaFlaskStream(req);
 }
