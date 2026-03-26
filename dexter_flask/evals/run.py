@@ -27,14 +27,7 @@ class JudgeOut(BaseModel):
 
 
 def _dataset_path() -> Path:
-    # Temporary location: keep the existing TS dataset until we decide to move it.
-    return (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "evals"
-        / "dataset"
-        / "finance_agent.csv"
-    )
+    return Path(__file__).resolve().parent / "dataset" / "finance_agent.csv"
 
 
 def load_examples(csv_path: Path) -> list[Example]:
@@ -69,7 +62,8 @@ def judge_correctness(
         "Evaluate and provide:\n"
         "- score: 1 if the answer is correct (contains the key information), "
         "0 if incorrect\n"
-        "- comment: brief explanation of why the answer is correct or incorrect"
+        "- comment: brief explanation of why the answer is correct or "
+        "incorrect"
     )
 
     res = call_llm_structured(
@@ -106,7 +100,10 @@ def run_eval(
         )
     )
 
-    system_prompt = "You are a careful financial QA evaluator. Provide only the required JSON fields."
+    system_prompt = (
+        "You are a careful financial QA evaluator. Provide only the required "
+        "JSON fields."
+    )
 
     correct = 0
     results: list[dict[str, Any]] = []
@@ -156,7 +153,10 @@ def run_eval(
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="dexter-eval", description="Dexter evaluation runner (Python)")
+    p = argparse.ArgumentParser(
+        prog="dexter-eval",
+        description="Dexter evaluation runner (Python)",
+    )
     p.add_argument("--sample", type=int, default=5)
     p.add_argument("--model", default="gpt-5.4")
     p.add_argument("--provider", default="openai")

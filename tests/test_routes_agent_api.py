@@ -230,6 +230,7 @@ def test_api_agent_stream_prunes_heartbeat_turn(monkeypatch) -> None:
     }
     r = c.post("/api/agent/stream", json=payload)
     assert r.status_code == 200
+    _ = r.data.decode("utf-8")
     assert hist.user_queries == ["hello"]
     assert hist.saved_answers == [f"Some text {HEARTBEAT_OK_TOKEN}"]
     assert hist.pruned_count == 1
