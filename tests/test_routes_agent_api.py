@@ -111,6 +111,26 @@ class FakeAgent:
         }
 
 
+class FakeAgentCustomProgress:
+    def run(self, query: str, history: Any) -> Generator[dict[str, Any], None, None]:
+        from dexter_flask.tools.context import emit_tool_progress, tool_progress_tool
+
+        yield {"type": "thinking", "message": "Thinking..."}
+        # Simulate a tool emitting a progress message that does not match
+        # the "Running <tool>..." pattern, while still originating from tool execution.
+        with tool_progress_tool("dummy"):
+            emit_tool_progress("Doing something custom...")
+        yield {
+            "type": "done",
+            "answer": "FINAL",
+            "toolCalls": [],
+            "iterations": 1,
+            "totalTime": 1,
+            "tokenUsage": None,
+            "tokensPerSecond": 0.0,
+        }
+
+
 def test_api_agent_stream_sse_saves_history(monkeypatch) -> None:
     from dexter_flask.app import create_app
     from dexter_flask.routes import agent_api
@@ -151,6 +171,41 @@ def test_api_agent_stream_sse_saves_history(monkeypatch) -> None:
     assert hist.user_queries == ["hello"]
     assert hist.saved_answers == ["FINAL"]
 
+
+def test_api_agent_stream_tool_progress_includes_tool_for_custom_message(
+    monkeypatch,
+) -> None:
+    from dexter_flask.app import create_app
+    from dexter_flask.routes import agent_api
+
+    hist = FakeHistory(user_queries=[], saved_answers=[])
+
+    def fake_get_chat_history(session_key: str, model: str) -> FakeHistory:
+        return hist
+
+    monkeypatch.setattr(agent_api, "get_chat_history", fake_get_chat_history)
+    monkeypatch.setattr(
+        agent_api.Agent,
+        "create",
+        classmethod(lambda cls, cfg: FakeAgentCustomProgress()),
+    )
+
+    app = create_app()
+    c = app.test_client()
+    payload = {
+        "sessionKey": "s1",
+        "query": "hello",
+        "model": "gpt-5.4",
+        "modelProvider": "openai",
+        "maxIterations": 2,
+        "isolatedSession": False,
+    }
+    r = c.post("/api/agent/stream", json=payload)
+    assert r.status_code == 200
+    body = r.data.decode("utf-8")
+    assert '"type": "tool_progress"' in body
+    assert '"message": "Doing something custom..."' in body
+    assert '"tool": "dummy"' in body
 
 def test_api_agent_stream_isolated_does_not_save_history(monkeypatch) -> None:
     from dexter_flask.app import create_app

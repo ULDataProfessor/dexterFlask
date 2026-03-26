@@ -13,7 +13,7 @@ from langchain_core.tools import BaseTool
 
 from dexter_flask.agent.run_context import RunContext
 from dexter_flask.agent.types import ApprovalDecision
-from dexter_flask.tools.context import emit_tool_progress
+from dexter_flask.tools.context import emit_tool_progress, tool_progress_tool
 
 TOOLS_REQUIRING_APPROVAL = frozenset({"write_file", "edit_file"})
 
@@ -116,7 +116,8 @@ class AgentToolExecutor:
 
         try:
             emit_tool_progress(f"Running {tool_name}...")
-            raw = tool.invoke(tool_args)
+            with tool_progress_tool(tool_name):
+                raw = tool.invoke(tool_args)
             result = raw if isinstance(raw, str) else json.dumps(raw, default=str)
             dur = int(time.time() * 1000 - t0)
             yield {

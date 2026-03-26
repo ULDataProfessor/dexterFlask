@@ -16,7 +16,7 @@ Acceptance:
 
 1. Emit `tool_progress` events with consistent `tool` field
 
-   - Gap: `tool_progress` is emitted, but the `tool` field may be empty if the progress message does not match the `Running <tool>...` pattern.
+   Status: done.
 
    Acceptance:
 
@@ -26,9 +26,7 @@ Acceptance:
 
 1. Add heartbeat pruning parity to `/api/agent/stream`
 
-   - Gap: `/api/agent/run` prunes the last turn when `isHeartbeat=true` and final answer contains the heartbeat token. `/api/agent/stream` currently saves the final answer but doesn’t apply the pruning logic.
-   - Next step:
-     - Implement the same pruning logic server-side in `dexter_flask/routes/agent_api.py` after the generator observes the final `done` event.
+   Status: done.
 
    Acceptance:
 
@@ -38,11 +36,7 @@ Acceptance:
 
 1. Emit `memory_recalled` from Flask
 
-   - Gap: TypeScript’s `AgentEvent` union includes `memory_recalled`, but Python currently only emits `memory_flush`.
-   - Next step:
-     - Add a new event type to `dexter_flask/agent/types.py` for `memory_recalled`.
-     - Emit `memory_recalled` when the server loads session memory context (hook in `dexter_flask/agent/loop.py` around the memory context load).
-     - Ensure the event payload matches TS expectations (`filesLoaded`, `tokenCount`).
+   Status: done.
 
    Acceptance:
 
@@ -53,13 +47,7 @@ Acceptance:
 
 1. Expose tool approval flow over HTTP/SSE
 
-   - Gap: TypeScript supports tool approval interactively, and Python can emit `tool_approval` / `tool_denied`, but the HTTP routes currently don’t expose a pause -> operator decision -> resume mechanism.
-   - Next step (protocol design, then implementation):
-     - Introduce a run-id.
-     - Stream `tool_approval` / `tool_denied` events.
-     - Add an HTTP follow-up endpoint for operator decisions (allow-once, allow-session, deny).
-     - Implement the pause/resume logic in Python so tool execution blocks until a decision arrives.
-     - Wire the TS gateway/runner to send approval decisions back to Python.
+   Status: done.
 
    Acceptance:
 
@@ -68,10 +56,9 @@ Acceptance:
 
 1. Add cancellation parity (AbortSignal -> disconnect/cancel)
 
-   - Gap: TypeScript supports cancelling runs via `AbortSignal`, but Python HTTP endpoints have no cancellation mechanism.
-   - Next step:
-     - Implement cancellation when the SSE client disconnects OR via a run-id cancellation endpoint.
-     - Ensure Python stops long-running loops and does not continue emitting events after cancellation.
+   Status: partially done.
+   - Implemented: run-id cancellation endpoint + cooperative cancellation in the agent loop.
+   - Remaining: disconnect-driven cancellation (SSE client disconnect) and hard cancellation for long-running tool invocations (if needed).
 
    Acceptance:
 
@@ -82,11 +69,8 @@ Acceptance:
 
 1. Add/extend tests to cover the parity items above
 
-   - Next step:
-     - Flask: extend `tests/test_routes_agent_api.py` to cover
-       - heartbeat pruning parity on `/api/agent/stream`
-       - presence/shape of `memory_recalled` event
-       - (later) approval and cancellation flow regression coverage once endpoints exist
+   Status: in progress.
+   - Flask: extend `tests/test_routes_agent_api.py` to cover custom tool progress messages including a non-empty `tool`.
 
    Acceptance:
 

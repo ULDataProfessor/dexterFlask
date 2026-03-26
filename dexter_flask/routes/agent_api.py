@@ -141,18 +141,27 @@ def api_agent_stream():
     agent = Agent.create(cfg)
 
     def gen():
-        tool_progress_queue: deque[str] = deque()
+        tool_progress_queue: deque[tuple[str, str]] = deque()
 
-        def _cb(msg: str) -> None:
-            tool_progress_queue.append(msg)
+        def _cb(*args: Any) -> None:
+            # Backward/forward-compatible with progress callbacks.
+            # New shape: (tool, message). Old shape: (message,).
+            if len(args) == 2:
+                tool, msg = args
+                tool_progress_queue.append((str(tool or ""), str(msg or "")))
+                return
+            if len(args) == 1:
+                (msg,) = args
+                tool_progress_queue.append(("", str(msg or "")))
+                return
 
         def _drain_progress():
             while tool_progress_queue:
-                msg = tool_progress_queue.popleft()
-                tool = ""
-                m = re.match(r"^Running (.+)\.\.\.$", msg)
-                if m:
-                    tool = m.group(1)
+                tool, msg = tool_progress_queue.popleft()
+                if not tool:
+                    m = re.match(r"^Running (.+)\.\.\.$", msg)
+                    if m:
+                        tool = m.group(1)
                 ev = {"type": "tool_progress", "tool": tool, "message": msg}
                 yield f"data: {json.dumps(ev, default=str)}\n\n"
 
