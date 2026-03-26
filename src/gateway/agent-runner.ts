@@ -3,6 +3,7 @@ import { InMemoryChatHistory } from '../utils/in-memory-chat-history.js';
 import { HEARTBEAT_OK_TOKEN } from './heartbeat/suppression.js';
 import type { AgentEvent } from '../agent/types.js';
 import type { GroupContext } from '../agent/prompts.js';
+import { isFlaskAgentEnabled, runAgentViaFlask } from './flask-agent.js';
 
 type SessionState = {
   history: InMemoryChatHistory;
@@ -40,6 +41,10 @@ export type AgentRunRequest = {
 };
 
 export async function runAgentForMessage(req: AgentRunRequest): Promise<string> {
+  if (isFlaskAgentEnabled()) {
+    return runAgentViaFlask(req);
+  }
+
   const isolated = req.isolatedSession ?? false;
   const session = isolated ? null : getSession(req.sessionKey, req.model);
   let finalAnswer = '';

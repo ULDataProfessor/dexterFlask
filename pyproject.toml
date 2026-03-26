@@ -7,7 +7,7 @@ name = "dexter-flask"
 version = "2026.3.25"
 description = "Dexter financial research agent — Python/Flask"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
   "flask>=3.0",
   "httpx>=0.27",
@@ -25,6 +25,8 @@ dependencies = [
   "readability-lxml>=0.8",
   "tiktoken>=0.7",
   "gunicorn>=22.0",
+  "pyyaml>=6.0",
+  "croniter>=2.0",
 ]
 
 [project.optional-dependencies]

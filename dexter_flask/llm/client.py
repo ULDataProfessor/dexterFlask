@@ -139,6 +139,33 @@ def _extract_usage(result: Any) -> dict[str, int] | None:
     return None
 
 
+def call_llm_structured(
+    prompt: str,
+    *,
+    model: str = DEFAULT_MODEL,
+    system_prompt: str,
+    schema: type,
+):
+    """Single structured output invoke (Pydantic schema)."""
+    llm = get_chat_model(model, streaming=False)
+    structured = llm.with_structured_output(schema)
+    provider = resolve_provider(model)
+
+    def _invoke():
+        if provider.id == "anthropic":
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=prompt),
+            ]
+            return structured.invoke(messages)
+        tpl = ChatPromptTemplate.from_messages(
+            [("system", "{system}"), ("user", "{prompt}")]
+        )
+        return (tpl | structured).invoke({"system": system_prompt, "prompt": prompt})
+
+    return _with_retry(_invoke, resolve_provider(model).display_name)
+
+
 def call_llm(
     prompt: str,
     *,
