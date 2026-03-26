@@ -56,9 +56,9 @@ Acceptance:
 
 1. Add cancellation parity (AbortSignal -> disconnect/cancel)
 
-   Status: partially done.
-   - Implemented: run-id cancellation endpoint + cooperative cancellation in the agent loop.
-   - Remaining: disconnect-driven cancellation (SSE client disconnect) and hard cancellation for long-running tool invocations (if needed).
+   Status: mostly done.
+   - Implemented: run-id cancellation endpoint, cooperative cancellation in the agent loop, and disconnect-driven cancellation handling in the SSE stream route.
+   - Remaining: hard cancellation for long-running blocking LLM/tool invocations (if needed).
 
    Acceptance:
 
@@ -70,8 +70,31 @@ Acceptance:
 1. Add/extend tests to cover the parity items above
 
    Status: in progress.
-   - Flask: extend `tests/test_routes_agent_api.py` to cover custom tool progress messages including a non-empty `tool`.
+   - Flask route tests now cover custom `tool_progress` tool attribution and approval/cancel endpoint validation.
+   - Remaining: add end-to-end stream approval wait/resume and cancel-while-waiting regression coverage.
 
    Acceptance:
 
 - Tests fail on regressions and pass after the parity items are implemented.
+
+## Milestone 6 — Session durability + concurrency hardening
+
+1. Use persistent storage for chat sessions
+
+   Status: done.
+   - Implemented: SQLite-backed chat session storage in `dexter_flask/services/sessions.py`.
+   - Config: defaults to `.dexter/sessions.db` and can be overridden with `DEXTER_SESSIONS_DB_PATH`.
+
+   Acceptance:
+
+- Session history persists across in-process cache reloads and survives process restarts.
+
+2. Harden session store concurrency behavior
+
+   Status: in progress.
+   - Implemented: lock-protected session history object creation to avoid same-session races in `_sessions`.
+   - Remaining: add stronger SQLite contention handling (`busy_timeout`/WAL) if needed under multi-process write load.
+
+   Acceptance:
+
+- Concurrent requests do not create conflicting session history objects for the same session key.

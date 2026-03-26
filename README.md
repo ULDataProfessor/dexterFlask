@@ -38,6 +38,8 @@ python -m dexter_flask.app  # default http://127.0.0.1:5050
 - `GET /health` — liveness
 - `POST /api/agent/run` — JSON body: `sessionKey`, `query`, `model`, `modelProvider`, optional `maxIterations`, `isolatedSession`, `channel`, `groupContext`, `isHeartbeat`; returns `{ "answer": "..." }`
 - `POST /api/agent/stream` — same JSON body; `text/event-stream` with JSON `data:` lines mirroring agent events (including `type: "tool_progress"`)
+- `POST /api/agent/approval` — JSON body: `runId`, `decision` (`allow-once` | `allow-session` | `deny`); applies tool approval decision for an active streamed run.
+- `POST /api/agent/cancel` — JSON body: `runId`; requests cancellation for an active streamed run.
 
 Set `DEXTER_DISABLE_CRON=1` to run without the background scheduler (e.g. in tests).
 
@@ -81,6 +83,7 @@ The Flask service (`dexter_flask/`) is the core agent runtime. It registers a co
 - `.dexter/memory/`: `MEMORY.md` plus daily memory files used for long-term recall.
 - `.dexter/workspace/`: sandbox root used by the filesystem tools.
 - `.dexter/cron/jobs.json`: cron scheduler persistence.
+- `.dexter/sessions.db`: SQLite-backed chat history persistence for API sessions (override with `DEXTER_SESSIONS_DB_PATH`).
 
 ## 👋 Overview
 

@@ -2,11 +2,113 @@ from dataclasses import dataclass
 from typing import Any, Generator
 
 
+def test_api_agent_approval_invalid_body_returns_400() -> None:
+    from dexter_flask.app import create_app
+
+    app = create_app()
+    c = app.test_client()
+    r = c.post("/api/agent/approval", json={})
+    assert r.status_code == 400
+    body = r.get_json()
+    assert body is not None
+    assert body.get("error") == "invalid_request"
+
+
+def test_api_agent_approval_unknown_run_id_returns_404() -> None:
+    from dexter_flask.app import create_app
+
+    app = create_app()
+    c = app.test_client()
+    r = c.post(
+        "/api/agent/approval",
+        json={"runId": "missing-run-id", "decision": "deny"},
+    )
+    assert r.status_code == 404
+    body = r.get_json()
+    assert body is not None
+    assert body.get("error") == "invalid_run_id"
+
+
+def test_api_agent_approval_invalid_decision_returns_400() -> None:
+    from dexter_flask.app import create_app
+    from dexter_flask.routes import agent_api
+
+    run_id = "run-approval-invalid-decision"
+    agent_api._approval_states[run_id] = agent_api.ApprovalState()
+    try:
+        app = create_app()
+        c = app.test_client()
+        r = c.post(
+            "/api/agent/approval",
+            json={"runId": run_id, "decision": "allow"},
+        )
+        assert r.status_code == 400
+        body = r.get_json()
+        assert body is not None
+        assert body.get("error") == "invalid_decision"
+    finally:
+        agent_api._approval_states.pop(run_id, None)
+
+
+def test_api_agent_approval_valid_decision_returns_ok() -> None:
+    from dexter_flask.app import create_app
+    from dexter_flask.routes import agent_api
+
+    run_id = "run-approval-valid"
+    agent_api._approval_states[run_id] = agent_api.ApprovalState()
+    try:
+        app = create_app()
+        c = app.test_client()
+        r = c.post(
+            "/api/agent/approval",
+            json={"runId": run_id, "decision": "allow-once"},
+        )
+        assert r.status_code == 200
+        assert r.get_json() == {"ok": True}
+    finally:
+        agent_api._approval_states.pop(run_id, None)
+
+
+def test_api_agent_cancel_validation_and_ok_flow() -> None:
+    from dexter_flask.app import create_app
+    from dexter_flask.routes import agent_api
+
+    app = create_app()
+    c = app.test_client()
+
+    bad = c.post("/api/agent/cancel", json={})
+    assert bad.status_code == 400
+    bad_body = bad.get_json()
+    assert bad_body is not None
+    assert bad_body.get("error") == "invalid_request"
+
+    missing = c.post("/api/agent/cancel", json={"runId": "missing-run-id"})
+    assert missing.status_code == 404
+    missing_body = missing.get_json()
+    assert missing_body is not None
+    assert missing_body.get("error") == "invalid_run_id"
+
+    run_id = "run-cancel-valid"
+    st = agent_api.ApprovalState()
+    agent_api._approval_states[run_id] = st
+    try:
+        ok = c.post("/api/agent/cancel", json={"runId": run_id})
+        assert ok.status_code == 200
+        assert ok.get_json() == {"ok": True}
+        assert st.is_cancelled() is True
+    finally:
+        agent_api._approval_states.pop(run_id, None)
+
+
 def test_api_agent_run_returns_answer(monkeypatch) -> None:
     from dexter_flask.app import create_app
     from dexter_flask.routes import agent_api
 
-    monkeypatch.setattr(agent_api, "run_agent_for_message", lambda body: "ANSWER")
+    monkeypatch.setattr(
+        agent_api,
+        "run_agent_for_message",
+        lambda body: "ANSWER",
+    )
 
     app = create_app()
     c = app.test_client()
@@ -47,7 +149,11 @@ def test_api_agent_run_prunes_heartbeat_turn(monkeypatch) -> None:
                 "tokensPerSecond": 0.0,
             }
 
-    monkeypatch.setattr(agent_runner, "get_chat_history", fake_get_chat_history)
+    monkeypatch.setattr(
+        agent_runner,
+        "get_chat_history",
+        fake_get_chat_history,
+    )
     monkeypatch.setattr(
         agent_runner.Agent,
         "create",
@@ -88,7 +194,9 @@ class FakeHistory:
 
 
 class FakeAgent:
-    def run(self, query: str, history: Any) -> Generator[dict[str, Any], None, None]:
+    def run(
+        self, query: str, history: Any
+    ) -> Generator[dict[str, Any], None, None]:
         from dexter_flask.tools.context import emit_tool_progress
 
         yield {"type": "thinking", "message": "Thinking..."}
@@ -112,12 +220,14 @@ class FakeAgent:
 
 
 class FakeAgentCustomProgress:
-    def run(self, query: str, history: Any) -> Generator[dict[str, Any], None, None]:
+    def run(
+        self, query: str, history: Any
+    ) -> Generator[dict[str, Any], None, None]:
         from dexter_flask.tools.context import emit_tool_progress, tool_progress_tool
 
         yield {"type": "thinking", "message": "Thinking..."}
         # Simulate a tool emitting a progress message that does not match
-        # the "Running <tool>..." pattern, while still originating from tool execution.
+        # the "Running <tool>..." pattern while still coming from tool execution.
         with tool_progress_tool("dummy"):
             emit_tool_progress("Doing something custom...")
         yield {
@@ -206,6 +316,7 @@ def test_api_agent_stream_tool_progress_includes_tool_for_custom_message(
     assert '"type": "tool_progress"' in body
     assert '"message": "Doing something custom..."' in body
     assert '"tool": "dummy"' in body
+
 
 def test_api_agent_stream_isolated_does_not_save_history(monkeypatch) -> None:
     from dexter_flask.app import create_app

@@ -11,6 +11,7 @@ from dexter_flask.agent.chat_history import InMemoryChatHistory, _Message
 
 _sessions: dict[str, InMemoryChatHistory] = {}
 _db_lock = threading.Lock()
+_sessions_lock = threading.Lock()
 
 
 def _db_path() -> Path:
@@ -120,10 +121,11 @@ class SQLiteChatHistory(InMemoryChatHistory):
 
 
 def get_chat_history(session_key: str, model: str) -> InMemoryChatHistory:
-    s = _sessions.get(session_key)
-    if s is None:
-        s = SQLiteChatHistory(session_key=session_key, model=model)
-        _sessions[session_key] = s
-    else:
-        s.set_model(model)
+    with _sessions_lock:
+        s = _sessions.get(session_key)
+        if s is None:
+            s = SQLiteChatHistory(session_key=session_key, model=model)
+            _sessions[session_key] = s
+        else:
+            s.set_model(model)
     return s
