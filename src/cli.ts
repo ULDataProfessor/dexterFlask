@@ -1,6 +1,8 @@
 import { Container, ProcessTerminal, Spacer, Text, TUI } from '@mariozechner/pi-tui';
 import type {
   ApprovalDecision,
+  MemoryFlushEvent,
+  MemoryRecalledEvent,
   ToolEndEvent,
   ToolErrorEvent,
   ToolStartEvent,
@@ -146,6 +148,30 @@ function renderHistory(chatLog: ChatLogComponent, history: AgentRunnerController
 
       if (event.type === 'context_cleared') {
         chatLog.addContextCleared(event.clearedCount, event.keptCount);
+        continue;
+      }
+
+      if (event.type === 'memory_recalled') {
+        const mem = event as MemoryRecalledEvent;
+        const files = mem.filesLoaded.length ? mem.filesLoaded.join(', ') : 'none';
+        chatLog.addChild(
+          new Text(theme.muted(`⏺ Memory loaded: ${files} (${mem.tokenCount} tokens)`), 0, 0),
+        );
+        continue;
+      }
+
+      if (event.type === 'memory_flush') {
+        const flush = event as MemoryFlushEvent;
+        const phaseLabel = flush.phase === 'start' ? 'Compacting memory...' : 'Memory compacted.';
+        const files = flush.filesWritten?.length ? flush.filesWritten.join(', ') : undefined;
+        chatLog.addChild(
+          new Text(
+            theme.muted(`⏺ Memory ${phaseLabel}${files ? ` (${files})` : ''}`),
+            0,
+            0,
+          ),
+        );
+        continue;
       }
     }
 
