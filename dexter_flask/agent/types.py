@@ -88,6 +88,12 @@ class MemoryFlushEvent(TypedDict, total=False):
     filesWritten: list[str]
 
 
+class MemoryRecalledEvent(TypedDict):
+    type: Literal["memory_recalled"]
+    filesLoaded: list[str]
+    tokenCount: int
+
+
 class TokenUsage(TypedDict):
     inputTokens: int
     outputTokens: int
@@ -114,6 +120,7 @@ AgentEvent = (
     | ToolDeniedEvent
     | ToolLimitEvent
     | ContextClearedEvent
+    | MemoryRecalledEvent
     | MemoryFlushEvent
     | DoneEvent
 )

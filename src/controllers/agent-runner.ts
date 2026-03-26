@@ -221,6 +221,14 @@ export class AgentRunnerController {
           completed: true,
         });
         break;
+      case 'memory_recalled':
+      case 'memory_flush':
+        this.pushEvent({
+          id: `${event.type}-${Date.now()}`,
+          event,
+          completed: true,
+        });
+        break;
       case 'done': {
         const done = event as DoneEvent;
         if (done.answer) {

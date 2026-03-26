@@ -14,6 +14,7 @@ from dexter_flask.agent.types import AgentConfig
 from dexter_flask.services.agent_runner import run_agent_for_message
 from dexter_flask.services.sessions import get_chat_history
 from dexter_flask.tools.context import set_tool_progress
+from dexter_flask.gateway.heartbeat_prompt import HEARTBEAT_OK_TOKEN
 
 agent_bp = Blueprint("agent", __name__)
 
@@ -110,6 +111,11 @@ def api_agent_stream():
                 yield from _drain_progress()
             if history and final:
                 history.save_answer(final)
+                if (
+                    parsed.isHeartbeat
+                    and final.strip().upper().find(HEARTBEAT_OK_TOKEN) >= 0
+                ):
+                    history.prune_last_turn()
             yield from _drain_progress()
         finally:
             set_tool_progress(None)

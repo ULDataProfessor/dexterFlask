@@ -53,6 +53,9 @@ class Agent:
         config: AgentConfig,
         tools: list,
         system_prompt: str,
+        *,
+        memory_files_loaded: list[str] | None = None,
+        memory_token_count: int = 0,
     ) -> None:
         self.model = config.model or DEFAULT_MODEL
         self.max_iterations = config.max_iterations or self.DEFAULT_MAX_ITER
@@ -62,6 +65,8 @@ class Agent:
         self._request_approval = config.request_tool_approval
         self._session_approved = config.session_approved_tools or set()
         self.memory_enabled = config.memory_enabled
+        self._memory_files_loaded = memory_files_loaded or []
+        self._memory_token_count = memory_token_count
 
     @classmethod
     def create(cls, config: AgentConfig | None = None) -> "Agent":
@@ -71,6 +76,8 @@ class Agent:
         soul = load_soul_document()
         memory_files: list[str] = []
         memory_context: str | None = None
+        memory_files_loaded: list[str] = []
+        memory_token_count = 0
         if cfg.memory_enabled is not False:
             try:
                 from dexter_flask.memory.manager import MemoryManager
@@ -79,6 +86,8 @@ class Agent:
                 memory_files = mm.list_files()
                 ctx = mm.load_session_context()
                 memory_context = ctx.get("text") or None
+                memory_files_loaded = ctx.get("filesLoaded") or []
+                memory_token_count = int(ctx.get("tokenCount") or 0)
             except Exception:
                 pass
         sp = build_system_prompt(
@@ -89,7 +98,13 @@ class Agent:
             memory_files=memory_files,
             memory_context=memory_context,
         )
-        return cls(cfg, tools, sp)
+        return cls(
+            cfg,
+            tools,
+            sp,
+            memory_files_loaded=memory_files_loaded,
+            memory_token_count=memory_token_count,
+        )
 
     def _initial_prompt(self, query: str, history: InMemoryChatHistory | None) -> str:
         if not history or not history.has_messages():
@@ -104,7 +119,7 @@ class Agent:
         query: str,
         history: InMemoryChatHistory | None = None,
     ) -> Any:
-        """Yield event dicts (thinking, tool_*, done, context_cleared, memory_flush)."""
+        """Yield event dicts (thinking, tool_*, done, context_cleared, memory_recalled, memory_flush)."""
         t0 = int(time.time() * 1000)
         if not self.tools:
             yield {
@@ -117,6 +132,12 @@ class Agent:
             return
 
         ctx = create_run_context(query)
+        if self.memory_enabled:
+            yield {
+                "type": "memory_recalled",
+                "filesLoaded": self._memory_files_loaded,
+                "tokenCount": self._memory_token_count,
+            }
         executor = AgentToolExecutor(self._tool_map, self._request_approval, self._session_approved)
         current_prompt = self._initial_prompt(query, history)
         memory_flushed = False
