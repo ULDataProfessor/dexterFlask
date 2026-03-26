@@ -68,7 +68,6 @@ def discover_skills() -> list[SkillMetadata]:
     root = repo_root()
     dirs = [
         (Path(__file__).resolve().parent / "builtin", "builtin"),
-        (root / "src" / "skills", "builtin"),
         (dexter_path("skills"), "project"),
     ]
     merged: dict[str, SkillMetadata] = {}
@@ -79,7 +78,7 @@ def discover_skills() -> list[SkillMetadata]:
     return list(merged.values())
 
 
-def get_skill(name: str) -> tuple[str, str] | None:
+def get_skill(name: str) -> tuple[str, str, str] | None:
     discover_skills()
     assert _skill_cache is not None
     m = _skill_cache.get(name)
@@ -87,7 +86,7 @@ def get_skill(name: str) -> tuple[str, str] | None:
         return None
     raw = Path(m.path).read_text(encoding="utf-8")
     _, body = _parse_frontmatter(raw)
-    return m.description, body
+    return m.description, body, m.path
 
 
 def build_skill_metadata_section() -> str:
