@@ -163,13 +163,23 @@ def api_agent_stream():
                     if m:
                         tool = m.group(1)
                 ev = {"type": "tool_progress", "tool": tool, "message": msg}
-                yield f"data: {json.dumps(ev, default=str)}\n\n"
+                try:
+                    yield f"data: {json.dumps(ev, default=str)}\n\n"
+                except GeneratorExit:
+                    # Treat client disconnect as cancellation.
+                    approval_state.cancel()
+                    raise
 
         set_tool_progress(_cb)
         final = ""
         try:
             for ev in agent.run(query, history):
-                yield f"data: {json.dumps(ev, default=str)}\n\n"
+                try:
+                    yield f"data: {json.dumps(ev, default=str)}\n\n"
+                except GeneratorExit:
+                    # Treat client disconnect as cancellation.
+                    approval_state.cancel()
+                    raise
                 if ev.get("type") == "done":
                     final = str(ev.get("answer") or "")
                 yield from _drain_progress()
