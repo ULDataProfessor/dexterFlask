@@ -27,6 +27,8 @@ function getSession(sessionKey: string, model: string): SessionState {
 
 export type AgentRunRequest = {
   sessionKey: string;
+  /** Unique identifier for this run (used for approval/cancellation over HTTP). */
+  runId?: string;
   query: string;
   model: string;
   modelProvider: string;

@@ -77,17 +77,30 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
   exit 0
 fi
 
-# Bump version in package.json
-CURRENT_VERSION=$(node -p "require('./package.json').version")
+# Bump version in pyproject.toml and dexter_flask/__init__.py
+CURRENT_VERSION=$(python3 -c "import tomli; from pathlib import Path; data=tomli.loads(Path('pyproject.toml').read_text('utf-8')); print(data['project']['version'])")
 if [[ "$CURRENT_VERSION" != "$VERSION" ]]; then
-  # Use node for a reliable in-place JSON edit
-  node -e "
-    const fs = require('fs');
-    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    pkg.version = '${VERSION}';
-    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-  "
-  git add package.json
+  python3 - <<PY
+import re
+from pathlib import Path
+
+version = "${VERSION}"
+
+pyproject = Path("pyproject.toml")
+txt = pyproject.read_text(encoding="utf-8")
+txt2 = re.sub(r'^version = \"[^\"]+\"$', f'version = \"{version}\"', txt, flags=re.M)
+if txt2 == txt:
+    raise SystemExit("Failed to update version in pyproject.toml")
+pyproject.write_text(txt2, encoding="utf-8")
+
+init_py = Path("dexter_flask/__init__.py")
+txt = init_py.read_text(encoding="utf-8")
+txt2 = re.sub(r'^__version__ = \"[^\"]+\"$', f'__version__ = \"{version}\"', txt, flags=re.M)
+if txt2 == txt:
+    raise SystemExit("Failed to update __version__ in dexter_flask/__init__.py")
+init_py.write_text(txt2, encoding="utf-8")
+PY
+  git add pyproject.toml dexter_flask/__init__.py
   git commit -m "Bump version to ${VERSION}"
 fi
 

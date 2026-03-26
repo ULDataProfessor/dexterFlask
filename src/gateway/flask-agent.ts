@@ -3,6 +3,7 @@
  */
 import { config } from 'dotenv';
 import type { AgentRunRequest } from './agent-runner.js';
+import type { ApprovalDecision } from '../agent/types.js';
 
 config({ quiet: true });
 
@@ -26,6 +27,7 @@ async function runAgentViaFlaskStream(req: AgentRunRequest): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sessionKey: req.sessionKey,
+      runId: req.runId,
       query: req.query,
       model: req.model,
       modelProvider: req.modelProvider,
@@ -98,4 +100,39 @@ async function runAgentViaFlaskStream(req: AgentRunRequest): Promise<string> {
 
 export async function runAgentViaFlask(req: AgentRunRequest): Promise<string> {
   return runAgentViaFlaskStream(req);
+}
+
+export async function sendToolApprovalToFlask(
+  params: { runId: string; decision: ApprovalDecision },
+): Promise<void> {
+  const base = flaskBaseUrl();
+  if (!base) throw new Error('Flask agent URL not configured');
+
+  const r = await fetch(`${base}/api/agent/approval`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      runId: params.runId,
+      decision: params.decision,
+    }),
+  });
+
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    throw new Error(`Flask approval error: ${r.status} ${body.slice(0, 500)}`);
+  }
+}
+
+export async function cancelFlaskRun(runId: string): Promise<void> {
+  const base = flaskBaseUrl();
+  if (!base) throw new Error('Flask agent URL not configured');
+
+  const r = await fetch(`${base}/api/agent/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ runId }),
+  });
+
+  // Best-effort: if endpoint isn’t implemented yet, don’t fail the whole UI.
+  if (!r.ok) return;
 }

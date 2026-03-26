@@ -17,6 +17,7 @@ class AgentConfig:
     request_tool_approval: Any | None = None
     session_approved_tools: set[str] | None = None
     memory_enabled: bool = True
+    cancel_requested: Any | None = None
 
 
 class GroupContext(TypedDict, total=False):

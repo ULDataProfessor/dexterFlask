@@ -41,9 +41,8 @@ python -m dexter_flask.app  # default http://127.0.0.1:5050
 
 Set `DEXTER_DISABLE_CRON=1` to run without the background scheduler (e.g. in tests).
 
-**WhatsApp gateway:** run Flask, then set `FLASK_AGENT_URL=http://127.0.0.1:5050` (or `DEXTER_FLASK_URL`) in `.env`. The Bun gateway (`bun run gateway`) delegates `runAgentForMessage` to Flask via [src/gateway/flask-agent.ts](src/gateway/flask-agent.ts).
-
-The Bun/TypeScript project remains for the terminal UI (`bun start`), evals, and the Baileys WhatsApp client.
+**WhatsApp / terminal UI note (Python-only mode):**
+This repo’s main agent runtime is Python (`dexter_flask/`). WhatsApp + the terminal UI require the original TypeScript/Node gateway and are not included in the Python-only setup.
 
 ## 🧰 Python Port: Tooling & Added Tools
 
@@ -162,38 +161,31 @@ export PORT=5050
 gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT dexter_flask.app:app
 ```
 
-## Optional: Run the Bun gateway (terminal UI / WhatsApp)
+## Python CLI (optional, runs in-process)
 
-If you want the existing terminal UI and/or WhatsApp gateway, keep using Bun.
+Run the agent directly (no Flask HTTP server):
 
-Run the terminal UI:
 ```bash
-bun start
+python -m dexter_flask run --query "What is the outlook for Apple (AAPL) over the next 12 months?"
 ```
 
-For WhatsApp:
+Event stream:
+
 ```bash
-bun run gateway:login
-bun run gateway
+python -m dexter_flask stream --query "Plan research steps to evaluate AAPL."
 ```
 
 ## 📊 How to Evaluate
 
-The full evaluation suite currently lives in the Bun/TypeScript codebase.
+For parity, there is a pytest suite (`tests/`) that covers Flask routes and agent/tool execution plumbing without making external API calls.
 
-For Python/Flask parity, there is also a pytest suite (`tests/`) that covers the Flask routes and agent/tool execution plumbing without making external API calls.
+For an end-to-end evaluation over the finance dataset, use the Python eval runner:
 
-**Run on all questions:**
 ```bash
-bun run src/evals/run.ts
+python -m dexter_flask.evals.run --sample 10
 ```
 
-**Run on a random sample of data:**
-```bash
-bun run src/evals/run.ts --sample 10
-```
-
-The eval runner displays a real-time UI showing progress, current question, and running accuracy statistics. Results are logged to LangSmith for analysis.
+By default, the runner also performs optional LLM-as-judge scoring. You can disable that with `--no-judge`.
 
 ## 🐛 How to Debug
 
@@ -219,28 +211,9 @@ Each file contains newline-delimited JSON entries tracking:
 
 This makes it easy to inspect exactly what data the agent gathered and how it interpreted results.
 
-## 📱 How to Use with WhatsApp
+## 📱 WhatsApp
 
-Chat with Dexter through WhatsApp by linking your phone to the gateway. The gateway delegates agent execution to the Flask service.
-
-Start Flask first:
-```bash
-export DEXTER_DISABLE_CRON=1
-python -m dexter_flask.app
-```
-
-**Quick start:**
-```bash
-# Link your WhatsApp account (scan QR code)
-bun run gateway:login
-
-# Start the gateway
-bun run gateway
-```
-
-Then open WhatsApp, go to your own chat (message yourself), and ask Dexter a question.
-
-For detailed setup instructions, configuration options, and troubleshooting, see the [WhatsApp Gateway README](src/gateway/channels/whatsapp/README.md).
+WhatsApp is not included in the Python-only setup. The original WhatsApp integration requires the TypeScript/Node gateway.
 
 ## 🤝 How to Contribute
 

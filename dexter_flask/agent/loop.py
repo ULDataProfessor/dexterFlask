@@ -65,6 +65,7 @@ class Agent:
         self._request_approval = config.request_tool_approval
         self._session_approved = config.session_approved_tools or set()
         self.memory_enabled = config.memory_enabled
+        self._cancel_requested = config.cancel_requested
         self._memory_files_loaded = memory_files_loaded or []
         self._memory_token_count = memory_token_count
 
@@ -121,6 +122,9 @@ class Agent:
     ) -> Any:
         """Yield event dicts (thinking, tool_*, done, context_cleared, memory_recalled, memory_flush)."""
         t0 = int(time.time() * 1000)
+        def is_cancelled() -> bool:
+            return bool(self._cancel_requested and callable(self._cancel_requested) and self._cancel_requested())
+
         if not self.tools:
             yield {
                 "type": "done",
@@ -138,6 +142,21 @@ class Agent:
                 "filesLoaded": self._memory_files_loaded,
                 "tokenCount": self._memory_token_count,
             }
+        if is_cancelled():
+            total = int(time.time() * 1000) - ctx.start_time
+            yield {
+                "type": "done",
+                "answer": "Cancelled",
+                "toolCalls": [
+                    {"tool": r.tool, "args": r.args, "result": r.result}
+                    for r in ctx.scratchpad.get_tool_call_records()
+                ],
+                "iterations": ctx.iteration,
+                "totalTime": total,
+                "tokenUsage": ctx.token_counter.get_usage(),
+                "tokensPerSecond": ctx.token_counter.get_tokens_per_second(total),
+            }
+            return
         executor = AgentToolExecutor(self._tool_map, self._request_approval, self._session_approved)
         current_prompt = self._initial_prompt(query, history)
         memory_flushed = False
@@ -146,6 +165,21 @@ class Agent:
 
         while ctx.iteration < self.max_iterations:
             ctx.iteration += 1
+            if is_cancelled():
+                total = int(time.time() * 1000) - ctx.start_time
+                yield {
+                    "type": "done",
+                    "answer": "Cancelled",
+                    "toolCalls": [
+                        {"tool": r.tool, "args": r.args, "result": r.result}
+                        for r in ctx.scratchpad.get_tool_call_records()
+                    ],
+                    "iterations": ctx.iteration,
+                    "totalTime": total,
+                    "tokenUsage": ctx.token_counter.get_usage(),
+                    "tokensPerSecond": ctx.token_counter.get_tokens_per_second(total),
+                }
+                return
             while True:
                 try:
                     resp, usage = call_llm(
@@ -207,6 +241,21 @@ class Agent:
             assert isinstance(resp, AIMessage)
             for ev in executor.execute_all(resp, ctx):
                 yield ev
+                if is_cancelled():
+                    total = int(time.time() * 1000) - ctx.start_time
+                    yield {
+                        "type": "done",
+                        "answer": "Cancelled",
+                        "toolCalls": [
+                            {"tool": r.tool, "args": r.args, "result": r.result}
+                            for r in ctx.scratchpad.get_tool_call_records()
+                        ],
+                        "iterations": ctx.iteration,
+                        "totalTime": total,
+                        "tokenUsage": ctx.token_counter.get_usage(),
+                        "tokensPerSecond": ctx.token_counter.get_tokens_per_second(total),
+                    }
+                    return
                 if ev.get("type") == "tool_denied":
                     total = int(time.time() * 1000) - ctx.start_time
                     yield {

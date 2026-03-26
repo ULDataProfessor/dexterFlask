@@ -23,16 +23,13 @@
 - Environment: `.env` (API keys; see `env.example`)
 - Scripts: `scripts/release.sh`
 
-## Build, Test, and Development Commands
+## Build, Test, and Development Commands (Python-first)
 
-- Runtime: Bun (primary). Use `bun` for all commands.
-- Install deps: `bun install`
-- Run: `bun run start` or `bun run src/index.tsx`
-- Dev (watch mode): `bun run dev`
-- Type-check: `bun run typecheck`
-- Tests: `bun test`
-- Evals: `bun run src/evals/run.ts` (full) or `bun run src/evals/run.ts --sample 10` (sampled)
-- CI runs `bun run typecheck` and `bun test` on push/PR.
+- Runtime: Python. Start the Flask service with `python -m dexter_flask.app`.
+- Install deps: `python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`
+- Run: `python -m dexter_flask.app`
+- Tests: `pytest`
+- Evals (end-to-end, optional judge): `python -m dexter_flask.evals.run --sample 10`
 
 ## Coding Style & Conventions
 
@@ -89,14 +86,13 @@
 
 - Version format: CalVer `YYYY.M.D` (no zero-padding). Tag prefix: `v`.
 - Release script: `bash scripts/release.sh [version]` (defaults to today's date).
-- Release flow: bump version in `package.json`, create git tag, push tag, create GitHub release via `gh`.
+- Release flow: bump version in `pyproject.toml` / `dexter_flask/__init__.py`, create git tag, push tag, create GitHub release via `gh`.
 - Do not push or publish without user confirmation.
 
 ## Testing
 
-- Framework: Bun's built-in test runner (primary), Jest config exists for legacy compatibility.
-- Tests colocated as `*.test.ts`.
-- Run `bun test` before pushing when you touch logic.
+- Framework: `pytest`
+- Tests colocated as `tests/*.py` (fast contract/unit tests for routes/tools)
 
 ## Security
 

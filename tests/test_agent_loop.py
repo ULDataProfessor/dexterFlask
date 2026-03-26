@@ -61,3 +61,28 @@ def test_agent_run_tool_path_emits_thinking_and_done(monkeypatch) -> None:
     assert any(e["type"] == "tool_end" for e in events)
     done = [e for e in events if e["type"] == "done"][-1]
     assert done["answer"] == "FINAL"
+
+
+def test_agent_run_memory_recalled_event(monkeypatch) -> None:
+    from dexter_flask.agent.loop import Agent
+    from dexter_flask.agent.types import AgentConfig
+    import dexter_flask.agent.loop as agent_loop
+
+    def fake_call_llm(*_: object, **__: object) -> tuple[Any, dict[str, int] | None]:
+        return "FINAL", None
+
+    monkeypatch.setattr(agent_loop, "call_llm", fake_call_llm)
+
+    dummy_tool = type("T", (), {"name": "dummy"})()
+    agent = Agent(
+        config=AgentConfig(model="gpt-5.4", max_iterations=2, memory_enabled=True),
+        tools=[dummy_tool],
+        system_prompt="SYS",
+        memory_files_loaded=["daily"],
+        memory_token_count=123,
+    )
+
+    events = list(agent.run("query", None))
+    assert events[0]["type"] == "memory_recalled"
+    assert events[0]["filesLoaded"] == ["daily"]
+    assert events[0]["tokenCount"] == 123

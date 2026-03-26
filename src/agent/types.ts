@@ -134,7 +134,8 @@ export interface ToolApprovalEvent {
   type: 'tool_approval';
   tool: string;
   args: Record<string, unknown>;
-  approved: ApprovalDecision;
+  /** When omitted, this event represents an approval *request* (remote execution flow). */
+  approved?: ApprovalDecision;
 }
 
 /**

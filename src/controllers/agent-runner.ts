@@ -8,6 +8,7 @@ import type {
 } from '../agent/index.js';
 import type { DisplayEvent } from '../agent/types.js';
 import type { HistoryItem, HistoryItemStatus, WorkingState } from '../types.js';
+import { cancelFlaskRun, isFlaskAgentEnabled, runAgentViaFlask, sendToolApprovalToFlask } from '../gateway/flask-agent.js';
 
 type ChangeListener = () => void;
 
@@ -25,6 +26,8 @@ export class AgentRunnerController {
   private readonly onChange?: ChangeListener;
   private abortController: AbortController | null = null;
   private approvalResolve: ((decision: ApprovalDecision) => void) | null = null;
+  private usingFlask = false;
+  private flaskRunId: string | null = null;
   private sessionApprovedTools = new Set<string>();
 
   constructor(
@@ -78,6 +81,9 @@ export class AgentRunnerController {
   }
 
   cancelExecution() {
+    if (this.usingFlask && this.flaskRunId) {
+      void cancelFlaskRun(this.flaskRunId);
+    }
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = null;
@@ -93,6 +99,10 @@ export class AgentRunnerController {
   }
 
   async runQuery(query: string): Promise<RunQueryResult | undefined> {
+    const flaskEnabled = isFlaskAgentEnabled();
+    this.usingFlask = flaskEnabled;
+    this.flaskRunId = null;
+
     this.abortController = new AbortController();
     let finalAnswer: string | undefined;
 
@@ -106,12 +116,40 @@ export class AgentRunnerController {
       startTime,
     };
     this.historyValue = [...this.historyValue, item];
-    this.inMemoryChatHistory.saveUserQuery(query);
+    if (!flaskEnabled) {
+      this.inMemoryChatHistory.saveUserQuery(query);
+    }
     this.errorValue = null;
     this.workingStateValue = { status: 'thinking' };
     this.emitChange();
 
     try {
+      if (flaskEnabled) {
+        // Remote execution via Flask streaming (enables HTTP-driven approvals).
+        const runId =
+          globalThis.crypto?.randomUUID?.() ??
+          `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        this.flaskRunId = runId;
+
+        const answer = await runAgentViaFlask({
+          sessionKey: 'cli',
+          runId,
+          query,
+          model: this.agentConfig.model ?? 'gpt-5.4',
+          modelProvider: this.agentConfig.modelProvider ?? 'openai',
+          maxIterations: this.agentConfig.maxIterations ?? 10,
+          signal: this.abortController.signal,
+          onEvent: (event) => this.handleEvent(event),
+          isolatedSession: false,
+        });
+
+        if (answer) {
+          return { answer };
+        }
+        return undefined;
+      }
+
+      // Local execution via TypeScript agent.
       const agent = await Agent.create({
         ...this.agentConfig,
         signal: this.abortController.signal,
@@ -144,6 +182,8 @@ export class AgentRunnerController {
       return undefined;
     } finally {
       this.abortController = null;
+      this.flaskRunId = null;
+      this.usingFlask = false;
     }
   }
 
@@ -199,13 +239,34 @@ export class AgentRunnerController {
         this.finishToolEvent(event);
         this.workingStateValue = { status: 'thinking' };
         break;
-      case 'tool_approval':
+      case 'tool_approval': {
+        const approval = event as { approved?: ApprovalDecision };
+
+        // Remote/HTTP mode emits `tool_approval` *requests* without an `approved` field.
+        if (approval.approved === undefined) {
+          await new Promise<void>((resolve) => {
+            this.approvalResolve = (decision) => {
+              const runId = this.flaskRunId;
+              if (runId) {
+                void sendToolApprovalToFlask({ runId, decision }).finally(() => resolve());
+              } else {
+                resolve();
+              }
+            };
+            this.pendingApprovalValue = { tool: event.tool, args: event.args };
+            this.workingStateValue = { status: 'approval', toolName: event.tool };
+            this.emitChange();
+          });
+          break;
+        }
+
         this.pushEvent({
           id: `approval-${event.tool}-${Date.now()}`,
           event,
           completed: true,
         });
         break;
+      }
       case 'tool_denied':
         this.pushEvent({
           id: `denied-${event.tool}-${Date.now()}`,
@@ -231,7 +292,7 @@ export class AgentRunnerController {
         break;
       case 'done': {
         const done = event as DoneEvent;
-        if (done.answer) {
+        if (done.answer && !this.usingFlask) {
           await this.inMemoryChatHistory.saveAnswer(done.answer).catch(() => {});
         }
         this.updateLastItem((last) => ({

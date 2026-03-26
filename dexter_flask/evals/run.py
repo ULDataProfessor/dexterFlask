@@ -6,7 +6,7 @@ import json
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -28,7 +28,13 @@ class JudgeOut(BaseModel):
 
 def _dataset_path() -> Path:
     # Temporary location: keep the existing TS dataset until we decide to move it.
-    return Path(__file__).resolve().parents[2] / "src" / "evals" / "dataset" / "finance_agent.csv"
+    return (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "evals"
+        / "dataset"
+        / "finance_agent.csv"
+    )
 
 
 def load_examples(csv_path: Path) -> list[Example]:
@@ -50,19 +56,21 @@ def judge_correctness(
     actual: str,
     system_prompt: str,
 ) -> JudgeOut:
-    prompt = f"""You are evaluating the correctness of an AI assistant's answer to a financial question.
-
-Compare the actual answer to the expected answer. The actual answer is considered correct if it conveys the same key information as the expected answer. Minor differences in wording, formatting, or additional context are acceptable as long as the core facts are correct.
-
-Expected Answer:
-{expected}
-
-Actual Answer:
-{actual}
-
-Evaluate and provide:
-- score: 1 if the answer is correct (contains the key information), 0 if incorrect
-- comment: brief explanation of why the answer is correct or incorrect"""
+    prompt = (
+        "You are evaluating the correctness of an AI assistant's answer "
+        "to a financial question.\n\n"
+        "Compare the actual answer to the expected answer. The actual "
+        "answer is considered correct if it conveys the same key "
+        "information as the expected answer.\n\n"
+        "Expected Answer:\n"
+        f"{expected}\n\n"
+        "Actual Answer:\n"
+        f"{actual}\n\n"
+        "Evaluate and provide:\n"
+        "- score: 1 if the answer is correct (contains the key information), "
+        "0 if incorrect\n"
+        "- comment: brief explanation of why the answer is correct or incorrect"
+    )
 
     res = call_llm_structured(
         prompt,
@@ -135,12 +143,16 @@ def run_eval(
 
         print(f"[{idx}/{n}] done")
 
-    summary = {"sampleSize": n, "correct": correct, "accuracy": correct / n if n else 0.0}
+    accuracy = correct / n if n else 0.0
+    summary = {"sampleSize": n, "correct": correct, "accuracy": accuracy}
     print(json.dumps(summary, indent=2))
     # Persist detailed results for later inspection.
     out_path = Path(".dexter") / "eval_results.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps({"summary": summary, "results": results}, default=str), encoding="utf-8")
+    out_path.write_text(
+        json.dumps({"summary": summary, "results": results}, default=str),
+        encoding="utf-8",
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -164,4 +176,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())
-
