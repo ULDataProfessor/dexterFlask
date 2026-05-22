@@ -17,8 +17,9 @@ python -m dexter_flask.app
 
 Environment variables used by the Flask entrypoint:
 
-- `PORT` (default: `5050`)
-- `FLASK_DEBUG` (`1` enables debug mode)
+- `PORT` (default: `5050`) — TCP port to listen on
+- `FLASK_HOST` (default: `127.0.0.1`) — bind address; set to `0.0.0.0` only when non-local access is intentional
+- `FLASK_DEBUG` (`1` enables Werkzeug debug mode — **never enable on a non-local interface or in production**)
 - `DEXTER_DISABLE_CRON=1` prevents background scheduler startup
 
 ## Run tests
