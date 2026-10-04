@@ -21,8 +21,26 @@ def create_app() -> Flask:
     return app
 
 
+def _get_run_kwargs() -> dict:
+    """Return the keyword arguments that should be passed to app.run().
+
+    Extracted as a pure helper so it can be unit-tested without starting the
+    server.  Default host is ``127.0.0.1`` (localhost only).  Set
+    ``FLASK_HOST=0.0.0.0`` only when non-local access is intentional (e.g.
+    inside a container behind a reverse proxy).  For production traffic always
+    use a proper WSGI server such as Gunicorn.
+    """
+    return {
+        "host": os.environ.get("FLASK_HOST", "127.0.0.1"),
+        "port": int(os.environ.get("PORT", "5050")),
+        # FLASK_DEBUG enables Werkzeug's interactive debugger — never set to 1
+        # on a non-local interface or in production.
+        "debug": os.environ.get("FLASK_DEBUG") == "1",
+    }
+
+
 app = create_app()
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "5050"))
-    app.run(host="0.0.0.0", port=port, debug=os.environ.get("FLASK_DEBUG") == "1")
+    app.run(**_get_run_kwargs())
+

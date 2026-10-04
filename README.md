@@ -153,7 +153,11 @@ cp env.example .env
 
 ## 🚀 How to Run
 
-Run the Python/Flask server:
+### Local development
+
+The built-in Flask dev server binds to `127.0.0.1` (localhost only) by default,
+so it is not reachable from other machines.  **Do not use the dev server in
+production** — it is single-threaded and not hardened.
 
 ```bash
 export PORT=5050
@@ -167,11 +171,24 @@ Then hit:
 curl -s http://127.0.0.1:5050/health
 ```
 
-Optional (production): run behind Gunicorn:
+Environment variables accepted by the entrypoint:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `5050` | TCP port to listen on |
+| `FLASK_HOST` | `127.0.0.1` | Bind address — override to `0.0.0.0` **only** when non-local binding is intentional (e.g. inside a container) |
+| `FLASK_DEBUG` | _(off)_ | Set to `1` to enable Werkzeug debug mode — **never enable in production or on a non-local interface** |
+| `DEXTER_DISABLE_CRON` | _(off)_ | Set to `1` to disable the APScheduler background jobs |
+
+### Production
+
+Use a proper WSGI server such as Gunicorn.  Bind to whatever address is
+appropriate for your deployment (e.g. `0.0.0.0` inside a container that is
+already behind a reverse proxy / firewall):
 
 ```bash
 export PORT=5050
-# If you want the APScheduler background jobs enabled, do not set DEXTER_DISABLE_CRON=1
+# If you want APScheduler background jobs, do not set DEXTER_DISABLE_CRON=1
 gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT dexter_flask.app:app
 ```
 
