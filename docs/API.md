@@ -2,6 +2,18 @@
 
 Base URL: `http://127.0.0.1:5050`
 
+## Authentication
+
+All `/api/agent/*` endpoints require `Authorization: Bearer <token>`. Set the same
+`DEXTER_API_TOKEN` on the server and in the trusted client. Use a random token of
+at least 32 bytes, keep it out of URLs/logs, and use HTTPS for non-local traffic.
+Configure it before starting the server; restart server workers when rotating it.
+Missing or blank server configuration disables agent routes with HTTP 503.
+Missing or incorrect credentials return HTTP 401 with `WWW-Authenticate: Bearer`.
+Existing clients (including any external gateway) must add the header to run,
+stream, approval, and cancel requests. The in-process CLI is unchanged.
+A shared token is suitable for trusted clients, not mutually untrusted users.
+
 ## GET /health
 
 Liveness endpoint.

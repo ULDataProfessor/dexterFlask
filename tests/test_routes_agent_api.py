@@ -1,12 +1,25 @@
 from dataclasses import dataclass
 from typing import Any, Generator
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def configure_api_token(monkeypatch):
+    monkeypatch.setenv("DEXTER_API_TOKEN", "test-api-token")
+
+
+def _client(app):
+    client = app.test_client()
+    client.environ_base["HTTP_AUTHORIZATION"] = "Bearer test-api-token"
+    return client
+
 
 def test_api_agent_approval_invalid_body_returns_400() -> None:
     from dexter_flask.app import create_app
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     r = c.post("/api/agent/approval", json={})
     assert r.status_code == 400
     body = r.get_json()
@@ -18,7 +31,7 @@ def test_api_agent_approval_unknown_run_id_returns_404() -> None:
     from dexter_flask.app import create_app
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     r = c.post(
         "/api/agent/approval",
         json={"runId": "missing-run-id", "decision": "deny"},
@@ -37,7 +50,7 @@ def test_api_agent_approval_invalid_decision_returns_400() -> None:
     agent_api._approval_states[run_id] = agent_api.ApprovalState()
     try:
         app = create_app()
-        c = app.test_client()
+        c = _client(app)
         r = c.post(
             "/api/agent/approval",
             json={"runId": run_id, "decision": "allow"},
@@ -58,7 +71,7 @@ def test_api_agent_approval_valid_decision_returns_ok() -> None:
     agent_api._approval_states[run_id] = agent_api.ApprovalState()
     try:
         app = create_app()
-        c = app.test_client()
+        c = _client(app)
         r = c.post(
             "/api/agent/approval",
             json={"runId": run_id, "decision": "allow-once"},
@@ -74,7 +87,7 @@ def test_api_agent_cancel_validation_and_ok_flow() -> None:
     from dexter_flask.routes import agent_api
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
 
     bad = c.post("/api/agent/cancel", json={})
     assert bad.status_code == 400
@@ -111,7 +124,7 @@ def test_api_agent_run_returns_answer(monkeypatch) -> None:
     )
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     payload = {
         "sessionKey": "s1",
         "query": "hello",
@@ -161,7 +174,7 @@ def test_api_agent_run_prunes_heartbeat_turn(monkeypatch) -> None:
     )
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     payload = {
         "sessionKey": "s1",
         "query": "hello",
@@ -258,7 +271,7 @@ def test_api_agent_stream_sse_saves_history(monkeypatch) -> None:
     )
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     payload = {
         "sessionKey": "s1",
         "query": "hello",
@@ -301,7 +314,7 @@ def test_api_agent_stream_tool_progress_includes_tool_for_custom_message(
     )
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     payload = {
         "sessionKey": "s1",
         "query": "hello",
@@ -335,7 +348,7 @@ def test_api_agent_stream_isolated_does_not_save_history(monkeypatch) -> None:
     )
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     payload = {
         "sessionKey": "s1",
         "query": "hello",
@@ -381,7 +394,7 @@ def test_api_agent_stream_prunes_heartbeat_turn(monkeypatch) -> None:
     )
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     payload = {
         "sessionKey": "s1",
         "query": "hello",
@@ -434,7 +447,7 @@ def test_api_agent_stream_forwards_memory_recalled(monkeypatch) -> None:
     )
 
     app = create_app()
-    c = app.test_client()
+    c = _client(app)
     payload = {
         "sessionKey": "s1",
         "query": "hello",

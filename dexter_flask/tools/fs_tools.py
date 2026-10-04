@@ -7,7 +7,7 @@ from pathlib import Path
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from dexter_flask.paths import dexter_path, repo_root
+from dexter_flask.paths import dexter_path
 
 
 def _sandbox_root() -> Path:
@@ -26,18 +26,7 @@ def _resolve_safe(rel: str) -> Path:
 
 
 def _resolve_read_safe(file_path: str) -> Path:
-    """
-    Read tool is allowed to read:
-    - Relative paths under `.dexter/workspace`
-    - Absolute paths within the repo root
-    """
-    p = Path(file_path)
-    if p.is_absolute():
-        rr = repo_root().resolve()
-        rp = p.resolve()
-        if rr != rp and rr not in rp.parents:
-            raise ValueError("Absolute read path must be inside repo root")
-        return rp
+    """Restrict relative and absolute reads to the resolved workspace."""
     return _resolve_safe(file_path)
 
 
@@ -45,7 +34,7 @@ class ReadIn(BaseModel):
     filePath: str = Field(
         description=(
             "Path to read. Relative paths are relative to .dexter/workspace; "
-            "absolute paths must be inside the repo root."
+            "absolute paths must also be inside .dexter/workspace."
         )
     )
 
@@ -95,7 +84,7 @@ def read_file_tool() -> StructuredTool:
     return StructuredTool.from_function(
         name="read_file",
         description=READ_FILE_DESCRIPTION,
-        func=_read_file,
+        func=lambda filePath: _read_file(ReadIn(filePath=filePath)),
         args_schema=ReadIn,
     )
 

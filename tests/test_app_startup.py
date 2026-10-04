@@ -5,12 +5,16 @@ from __future__ import annotations
 import os
 import unittest.mock as mock
 
+import pytest
+
 
 def _run_kwargs(env_overrides: dict, *, remove: list[str] | None = None) -> dict:
     """Call _get_run_kwargs with a controlled environment."""
     from dexter_flask.app import _get_run_kwargs
 
     env = dict(os.environ)
+    for key in ("FLASK_HOST", "FLASK_DEBUG", "PORT"):
+        env.pop(key, None)
     env.update(env_overrides)
     for k in remove or []:
         env.pop(k, None)
@@ -53,3 +57,14 @@ def test_port_override() -> None:
     kwargs = _run_kwargs({"PORT": "8080"})
     assert kwargs["port"] == 8080
 
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "::", "192.168.1.2", "example.com", "localhost", ""])
+def test_debug_rejects_non_loopback_binding(host):
+    with pytest.raises(ValueError, match="literal loopback"):
+        _run_kwargs({"FLASK_HOST": host, "FLASK_DEBUG": "1"})
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "127.0.0.2", "::1"])
+def test_debug_allows_literal_loopback(host):
+    assert _run_kwargs({"FLASK_HOST": host, "FLASK_DEBUG": "1"})["debug"]

@@ -1,39 +1,94 @@
-# Dexter 🤖
+# Dexter Flask: Python AI Agent for Financial Research
 
-Dexter is an autonomous financial research agent that thinks, plans, and learns as it works. It performs analysis using task planning, self-reflection, and real-time market data. Think Claude Code, but built specifically for financial research.
+Dexter Flask (`dexterFlask`) is a Python financial research AI agent with a Flask HTTP API and command-line interface. It uses LLM tool calling to gather company financial statements, stock and crypto market data, SEC filings, and web research, then uses those results to answer natural-language questions. The research loop can make multiple tool calls, revisit the evidence, and return an answer within a configurable iteration limit.
 
-![Dexter screenshot](https://github.com/user-attachments/assets/3bcc3a7f-b68a-4f5e-8735-9d22196ff76e)
+This repository is a Python port of [Dexter](https://github.com/virattt/dexter), built for developers who want to integrate financial research into their own applications and researchers who want to inspect or extend an agent's workflow. It combines LangChain model integrations, Financial Datasets API tools, Server-Sent Events (SSE), persistent session history, memory, and scheduled jobs in a Python codebase.
+
+Start with the [Python quickstart](docs/PYTHON_QUICKSTART.md), the [Flask API reference](docs/API.md), or the [development and testing guide](docs/DEV_AND_TESTING.md).
 
 ## Table of Contents
 
-- [🐍 Python / Flask](#-python--flask)
-- [👋 Overview](#-overview)
+- [Financial research overview](#financial-research-overview)
+- [Use cases and example questions](#use-cases-and-example-questions)
+- [Architecture and rationale](#architecture-and-rationale)
+- [Python and Flask quick start](#python-and-flask-quick-start)
+- [Financial data and agent tools](#financial-data-and-agent-tools)
 - [✅ Prerequisites](#-prerequisites)
 - [💻 How to Install](#-how-to-install)
 - [🚀 How to Run](#-how-to-run)
+- [Python CLI](#python-cli-optional-runs-in-process)
 - [📊 How to Evaluate](#-how-to-evaluate)
 - [🐛 How to Debug](#-how-to-debug)
 - [📱 WhatsApp](#-whatsapp)
 - [🤝 How to Contribute](#-how-to-contribute)
 - [📄 License](#-license)
 
-## 🐍 Python / Flask
+## Financial research overview
 
-The research agent is implemented in Python (`dexter_flask/`) with a Flask HTTP API, LangChain providers, Financial Datasets tools, memory, cron (APScheduler), and optional Exa/Tavily/X search.
+Financial research often means combining several kinds of evidence: financial statements for business performance, market data for pricing context, SEC filings for disclosures, and news for recent developments. Dexter Flask exposes tools for these sources through one research loop, so a question can lead to a sequence of data requests rather than a single model response.
 
-More docs: `docs/PYTHON_QUICKSTART.md`, `docs/API.md`, `docs/DEV_AND_TESTING.md`, `docs/TODO.md`.
+The implementation supports:
 
-### Quick start
+- **Company and equity research:** income statements, balance sheets, cash flow statements, financial ratios, analyst estimates, company news, and insider trades.
+- **SEC filing analysis:** tools for locating and reading sections of 10-K, 10-Q, and 8-K filings.
+- **Natural-language stock screening:** translation of research criteria into Financial Datasets screener filters.
+- **Tool-calling workflows:** model-selected tools, recorded tool results, iteration limits, and warnings for repeated or similar tool calls.
+- **HTTP and CLI integration:** JSON answers, SSE research events, and in-process Python command-line execution.
+- **Continuity between API requests:** SQLite session history and file-based memory, with an isolated-run option that skips session history and memory integration.
+- **Extensible research instructions:** `SKILL.md` workflows, including a built-in discounted cash flow (DCF) valuation workflow.
+
+Results depend on the selected model, enabled tools, data-provider coverage, and API access. Some responses are cached, so check reporting periods, timestamps, sources, and assumptions before relying on an answer. Treat generated analysis as a research aid and review it independently before making financial decisions.
+
+## Use cases and example questions
+
+- **Analysts and individual researchers:** gather financial statements and compare company fundamentals. Example: "Compare AAPL and MSFT revenue growth and operating margins over the last three fiscal years."
+- **Developers building research apps:** connect a dashboard or chat interface to the Flask API and display tool activity using the SSE stream.
+- **Filing and disclosure research:** start with a question such as "Summarize the risk factors in the latest available NVDA 10-K and identify the filing used."
+- **Valuation experiments:** use the DCF workflow to explore cash flow assumptions, discount rates, and sensitivity analysis, then check the inputs and calculations.
+- **Agent development and evaluation:** add tools or skills, inspect JSONL research traces, and compare behavior with the included finance-question evaluation runner.
+
+These are example prompts and integration patterns; they do not guarantee data coverage or answer accuracy for every company or model.
+
+## Architecture and rationale
+
+### Python and Flask for a reusable research service
+
+The [agent loop](dexter_flask/agent/loop.py) is separate from the [Flask routes](dexter_flask/routes/agent_api.py) and [Python CLI](dexter_flask/cli.py). Both entry points use the same core agent, allowing developers to try queries locally and then expose that workflow over HTTP. The API can be connected to a frontend without requiring the upstream TypeScript/Node gateway.
+
+### Tool calling for structured financial data
+
+The [tool registry](dexter_flask/tools/registry.py) brings finance, search, browsing, memory, and workspace operations together. The `get_financials` and `get_market_data` tools route natural-language requests to more specific data tools. This keeps the main agent's tool list focused while allowing a query to retrieve multiple statements or data types. Tool results are recorded in a scratchpad and fed into subsequent iterations so later steps can use the evidence already gathered.
+
+### SSE for visible research progress
+
+Multi-step research can involve several external requests. The streaming endpoint emits JSON events over Server-Sent Events, including tool starts, results, progress, and completion. A client can show what is happening while the request runs. Separate approval and cancellation endpoints support interaction with an active streamed run; the current approval flow covers `write_file` and `edit_file`. See the [API reference](docs/API.md) for request and event formats.
+
+### Local persistence for inspection and continuity
+
+SQLite stores API session history, while local files hold memory, tool traces, cached responses, and scheduled-job definitions. This makes research state accessible for debugging and repeated sessions. APScheduler runs configured jobs in the background when enabled. These are shared service resources, so deployments should use a trusted-user boundary and follow the [deployment guidance](#production).
+
+### Model integrations and reusable skills
+
+[LangChain-backed model integrations](dexter_flask/llm/client.py) let the runtime use several model providers through a common invocation layer. Support for tool calling depends on the chosen model and integration. Markdown-based skills keep longer research procedures, such as the [DCF valuation workflow](dexter_flask/skills/builtin/dcf/SKILL.md), alongside the code so they can be reviewed and adapted. Changing a workflow does not require rewriting the HTTP layer.
+
+## Python and Flask quick start
+
+From a clone of [this repository](https://github.com/ULDataProfessor/dexterFlask), with Python 3.10+ and `uv` installed:
 
 ```bash
 uv venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-uv sync --dev
-cp env.example .env           # add API keys
+uv sync --extra dev
+cp env.example .env        # edit .env and add your API keys
+export DEXTER_DISABLE_CRON=1
+# Generate a token for this server session; keep it secret.
+export DEXTER_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 python -m dexter_flask.app  # default http://127.0.0.1:5050
 ```
 
-### Endpoints
+Every `/api/agent/*` request requires `Authorization: Bearer <DEXTER_API_TOKEN>`. Keep the token private. See the [authenticated request examples](docs/PYTHON_QUICKSTART.md#run-the-agent-non-streaming) and [installation instructions](#-how-to-install) for the full setup.
+
+### Flask API endpoints
 
 - `GET /health` — liveness
 - `POST /api/agent/run` — JSON body: `sessionKey`, `query`, `model`, `modelProvider`, optional `maxIterations`, `isolatedSession`, `channel`, `groupContext`, `isHeartbeat`; returns `{ "answer": "..." }`
@@ -46,31 +101,31 @@ Set `DEXTER_DISABLE_CRON=1` to run without the background scheduler (e.g. in tes
 **WhatsApp / terminal UI note (Python-only mode):**
 This repo’s main agent runtime is Python (`dexter_flask/`). WhatsApp + the terminal UI require the original TypeScript/Node gateway and are not included in the Python-only setup.
 
-## 🧰 Python Port: Tooling & Added Tools
+## Financial data and agent tools
 
-The Flask service (`dexter_flask/`) is the core agent runtime. It registers a concrete set of tools that the agent can call during planning/execution (see `dexter_flask/tools/registry.py`).
+The Flask service (`dexter_flask/`) is the core agent runtime. The [tool registry](dexter_flask/tools/registry.py) defines the tools available during research. Optional search tools depend on configured API keys; browser navigation additionally requires Playwright and Chromium.
 
-### Finance tools
+### Financial statements, market data, and SEC filings
 
 - `get_financials`: routes to income statements, balance sheets, cash flow, earnings, key ratios, analyst estimates, and segmented revenues.
 - `get_market_data`: routes to stock/crypto price snapshots + price history, available tickers, company news, and insider trades.
 - `read_filings`: plans which SEC filings to read, then reads specific 10-K / 10-Q / 8-K items.
 - `stock_screener`: converts natural-language criteria into screener filters and returns matching tickers.
 
-### Web + browsing
+### Web search and browser research
 
 - `web_fetch`: fetches a URL and returns extracted readable text (cached on disk).
 - `web_search` (optional): current web search via Exa or Tavily (cached on disk).
 - `x_search` (optional): recent public posts on X/Twitter (requires `X_BEARER_TOKEN`).
 - `browser`: headless Playwright helper for JS-heavy pages (returns page title + body text).
 
-### Memory + skills
+### Persistent memory and research skills
 
 - `memory_search`: keyword/BM25 + fuzzy scoring over persistent memory files under `.dexter/memory/`.
 - `memory_get` / `memory_update`: read/edit append/delete memory file segments.
-- `skill` (optional): loads `SKILL.md`-based workflows from `dexter_flask/skills/`.
+- `skill` (when skills are discovered): loads `SKILL.md`-based workflows from `dexter_flask/skills/builtin/` and `.dexter/skills/`.
 
-### Filesystem sandbox + agent control
+### Workspace files and scheduled research
 
 - `read_file` / `write_file` / `edit_file`: sandboxed read/write/edit under `.dexter/workspace/` (prevents escaping to arbitrary paths).
 - `heartbeat`: view/update the monitoring checklist in `.dexter/HEARTBEAT.md`.
@@ -85,38 +140,23 @@ The Flask service (`dexter_flask/`) is the core agent runtime. It registers a co
 - `.dexter/cron/jobs.json`: cron scheduler persistence.
 - `.dexter/sessions.db`: SQLite-backed chat history persistence for API sessions (override with `DEXTER_SESSIONS_DB_PATH`).
 
-## 👋 Overview
-
-Dexter takes complex financial questions and turns them into clear, step-by-step research plans. It runs those tasks using live market data, checks its own work, and refines the results until it has a confident, data-backed answer.  
-
-**Key Capabilities:**
-
-- **Intelligent Task Planning**: Automatically decomposes complex queries into structured research steps
-- **Autonomous Execution**: Selects and executes the right tools to gather financial data
-- **Self-Validation**: Checks its own work and iterates until tasks are complete
-- **Real-Time Financial Data**: Access to income statements, balance sheets, and cash flow statements
-- **Safety Features**: Built-in loop detection and step limits to prevent runaway execution
-
-[![Twitter Follow](https://img.shields.io/twitter/follow/virattt?style=social)](https://twitter.com/virattt)
-[![Discord: Join Server](https://img.shields.io/badge/Discord-Join%20Server-5865F2?style=social&logo=discord)](https://discord.gg/jpGHv2XB6T)
-
-![Dexter screenshot](https://github.com/user-attachments/assets/2a6334f9-863f-4bd2-a56f-923e42f4711e)
-
 ## ✅ Prerequisites
 
 - Python >= 3.10
+- `uv` for the setup commands below
 - `FINANCIAL_DATASETS_API_KEY` ([Financial Datasets](https://financialdatasets.ai))
-- LLM API key (set one of: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, or run with `OLLAMA_BASE_URL`)
-- Optional web search: `EXASEARCH_API_KEY` (preferred, [Exa](https://exa.ai)) and/or `PERPLEXITY_API_KEY` / `TAVILY_API_KEY`
+- LLM API key (set one of: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`, `MOONSHOT_API_KEY`, `DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`, or use an Ollama model with `OLLAMA_BASE_URL`)
+- Optional web search: `EXASEARCH_API_KEY` (preferred, [Exa](https://exa.ai)) or `TAVILY_API_KEY`
 - Optional X/Twitter search: `X_BEARER_TOKEN` (enables the `x_search` tool)
+- Optional browser tool: install the `playwright` Python package and Chromium browser binaries
 
 ## 💻 How to Install
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/virattt/dexter.git
-cd dexter
+git clone https://github.com/ULDataProfessor/dexterFlask.git
+cd dexterFlask
 ```
 
 1. Set up Python (uv) and install deps:
@@ -124,7 +164,7 @@ cd dexter
 ```bash
 uv venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-uv sync --dev
+uv sync --extra dev
 ```
 
 1. Set up your environment variables:
@@ -140,13 +180,13 @@ cp env.example .env
 # XAI_API_KEY=your-xai-api-key (optional)
 # OPENROUTER_API_KEY=your-openrouter-api-key (optional)
 
-# Institutional-grade market data for agents; AAPL, NVDA, MSFT are free
+# Financial Datasets access; coverage depends on your API plan
 # FINANCIAL_DATASETS_API_KEY=your-financial-datasets-api-key
 
 # (Optional) If using Ollama locally
 # OLLAMA_BASE_URL=http://127.0.0.1:11434
 
-# Web Search (Exa preferred, Tavily fallback)
+# Web Search (Exa preferred; Tavily used when no Exa key is set)
 # EXASEARCH_API_KEY=your-exa-api-key
 # TAVILY_API_KEY=your-tavily-api-key
 ```
@@ -157,11 +197,13 @@ cp env.example .env
 
 The built-in Flask dev server binds to `127.0.0.1` (localhost only) by default,
 so it is not reachable from other machines.  **Do not use the dev server in
-production** — it is single-threaded and not hardened.
+production** — it is not designed for production security or performance.
 
 ```bash
 export PORT=5050
 export DEXTER_DISABLE_CRON=1
+# Generate a token for this server session; keep it secret.
+export DEXTER_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 python -m dexter_flask.app
 ```
 
@@ -178,10 +220,19 @@ Environment variables accepted by the entrypoint:
 | `PORT` | `5050` | TCP port to listen on |
 | `FLASK_HOST` | `127.0.0.1` | Bind address — override to `0.0.0.0` **only** when non-local binding is intentional (e.g. inside a container) |
 | `FLASK_DEBUG` | _(off)_ | Set to `1` to enable Werkzeug debug mode — **never enable in production or on a non-local interface** |
+| `DEXTER_API_TOKEN` | _(unset)_ | Required shared bearer token for every `/api/agent/*` route; unset disables these routes with HTTP 503 |
 | `DEXTER_DISABLE_CRON` | _(off)_ | Set to `1` to disable the APScheduler background jobs |
+
+Agent clients must send `Authorization: Bearer <DEXTER_API_TOKEN>`, including
+stream, approval and cancel requests. `/health` stays public. See [API authentication](docs/API.md#authentication).
+Debug startup refuses any host other than a literal loopback IP (`127.0.0.1` or `::1`).
+This guard applies to `python -m dexter_flask.app`; never use `flask run --debug` on an exposed interface.
 
 ### Production
 
+Set `DEXTER_API_TOKEN` through your deployment secret manager (use a random token of at least 32 bytes).
+Use HTTPS at a trusted reverse proxy and keep the backend inaccessible to untrusted networks.
+This shared token provides a single trusted-user boundary, not per-user session isolation.
 Use a proper WSGI server such as Gunicorn.  Bind to whatever address is
 appropriate for your deployment (e.g. `0.0.0.0` inside a container that is
 already behind a reverse proxy / firewall):
@@ -189,8 +240,11 @@ already behind a reverse proxy / firewall):
 ```bash
 export PORT=5050
 # If you want APScheduler background jobs, do not set DEXTER_DISABLE_CRON=1
-gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT dexter_flask.app:app
+gunicorn -w 1 -k gthread --threads 4 -b 127.0.0.1:$PORT dexter_flask.app:app
 ```
+
+The example uses one worker because streaming approvals/cancellations are kept in process-local memory.
+Only bind Gunicorn externally when your container/proxy network is deliberately isolated.
 
 ## Python CLI (optional, runs in-process)
 
@@ -208,7 +262,11 @@ python -m dexter_flask stream --query "Plan research steps to evaluate AAPL."
 
 ## 📊 How to Evaluate
 
-For parity, there is a pytest suite (`tests/`) that covers Flask routes and agent/tool execution plumbing without making external API calls.
+The [pytest suite](tests/) covers Flask routes and agent/tool execution plumbing without making external API calls:
+
+```bash
+uv run --extra dev pytest -q
+```
 
 For an end-to-end evaluation over the finance dataset, use the Python eval runner:
 
@@ -234,13 +292,13 @@ Dexter logs all tool calls to a scratchpad file for debugging and history tracki
 Each file contains newline-delimited JSON entries tracking:
 
 - **init**: The original query
-- **tool_result**: Each tool call with arguments, raw result, and LLM summary
+- **tool_result**: Each tool call with arguments and raw result
 - **thinking**: Agent reasoning steps
 
 **Example scratchpad entry:**
 
 ```json
-{"type":"tool_result","timestamp":"2026-01-30T11:14:05.123Z","toolName":"get_income_statements","args":{"ticker":"AAPL","period":"annual","limit":5},"result":{...},"llmSummary":"Retrieved 5 years of Apple annual income statements showing revenue growth from $274B to $394B"}
+{"type":"tool_result","timestamp":"2026-01-30T11:14:05.123Z","toolName":"get_financials","args":{"query":"AAPL annual income statements for the last five years"},"result":{"data":"Example financial data omitted"}}
 ```
 
 This makes it easy to inspect exactly what data the agent gathered and how it interpreted results.

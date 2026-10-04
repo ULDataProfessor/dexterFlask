@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+import hmac
 import json
 import re
 import threading
@@ -10,7 +11,7 @@ import uuid
 import time
 from typing import Any
 
-from flask import Blueprint, Response, request, stream_with_context
+from flask import Blueprint, Response, current_app, request, stream_with_context
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from dexter_flask.agent.loop import Agent
@@ -21,6 +22,23 @@ from dexter_flask.tools.context import set_tool_progress
 from dexter_flask.gateway.heartbeat_prompt import HEARTBEAT_OK_TOKEN
 
 agent_bp = Blueprint("agent", __name__)
+
+
+@agent_bp.before_request
+def require_agent_token():
+    """Authenticate every agent route before parsing input or starting work."""
+    expected = current_app.config.get("DEXTER_API_TOKEN", "")
+    if not expected:
+        return {"error": "agent_api_not_configured"}, 503
+    scheme, separator, token = request.headers.get("Authorization", "").partition(" ")
+    if (
+        not separator
+        or scheme.lower() != "bearer"
+        or not hmac.compare_digest(token.encode("utf-8"), expected.encode("utf-8"))
+    ):
+        return {"error": "unauthorized"}, 401, {"WWW-Authenticate": "Bearer"}
+    return None
+
 
 _DEFAULT_MODEL = "gpt-5.4"
 

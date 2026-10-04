@@ -19,9 +19,9 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: uv sync --extra dev --frozen
 
       - name: Run pytest
         env:
           DEXTER_DISABLE_CRON: "1"
-        run: uv run pytest -q
+        run: uv run --extra dev --frozen pytest -q

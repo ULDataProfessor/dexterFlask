@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
@@ -15,6 +17,15 @@ class BrowserIn(BaseModel):
 
 
 def _browser(inp: BrowserIn) -> str:
+    # Browser navigation must not bypass the filesystem tool's sandbox.
+    if inp.action == "navigate" and inp.url:
+        try:
+            parsed = urlsplit(inp.url.strip())
+            is_web_url = parsed.scheme.lower() in ("http", "https") and bool(parsed.hostname)
+        except ValueError:
+            is_web_url = False
+        if not is_web_url:
+            return format_tool_result({"error": "Only http/https URLs"}, [])
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -51,6 +62,6 @@ def browser_tool_fn() -> StructuredTool:
     return StructuredTool.from_function(
         name="browser",
         description=BROWSER_DESCRIPTION,
-        func=_browser,
+        func=lambda **kwargs: _browser(BrowserIn(**kwargs)),
         args_schema=BrowserIn,
     )

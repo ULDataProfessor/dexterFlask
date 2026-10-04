@@ -28,6 +28,8 @@ export PORT=5050
 # recommended for local dev/tests so the background scheduler doesn't start
 export DEXTER_DISABLE_CRON=1
 
+# Generate a token for this server session; keep it secret.
+export DEXTER_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 python -m dexter_flask.app
 ```
 
@@ -44,6 +46,7 @@ curl -s http://127.0.0.1:5050/health
 
 ```bash
 curl -s -X POST http://127.0.0.1:5050/api/agent/run \
+  -H "Authorization: Bearer $DEXTER_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "sessionKey":"s1",
@@ -67,6 +70,7 @@ Use `-N` to disable curl buffering so you see events as they arrive.
 
 ```bash
 curl -N -X POST http://127.0.0.1:5050/api/agent/stream \
+  -H "Authorization: Bearer $DEXTER_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "sessionKey":"s1",

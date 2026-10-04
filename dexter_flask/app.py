@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import os
 
 from flask import Flask
@@ -14,6 +15,7 @@ from dexter_flask.routes.health import health_bp
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    app.config["DEXTER_API_TOKEN"] = os.environ.get("DEXTER_API_TOKEN", "").strip()
     app.register_blueprint(health_bp)
     app.register_blueprint(agent_bp)
     if os.environ.get("DEXTER_DISABLE_CRON") != "1":
@@ -30,12 +32,22 @@ def _get_run_kwargs() -> dict:
     inside a container behind a reverse proxy).  For production traffic always
     use a proper WSGI server such as Gunicorn.
     """
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    debug = os.environ.get("FLASK_DEBUG") == "1"
+    if debug:
+        # Only literal loopback addresses are trusted; hostname resolution can change.
+        try:
+            loopback = ipaddress.ip_address(host).is_loopback
+        except ValueError:
+            loopback = False
+        if not loopback:
+            raise ValueError("FLASK_DEBUG=1 requires a literal loopback FLASK_HOST")
     return {
-        "host": os.environ.get("FLASK_HOST", "127.0.0.1"),
+        "host": host,
         "port": int(os.environ.get("PORT", "5050")),
         # FLASK_DEBUG enables Werkzeug's interactive debugger — never set to 1
         # on a non-local interface or in production.
-        "debug": os.environ.get("FLASK_DEBUG") == "1",
+        "debug": debug,
     }
 
 
@@ -43,4 +55,3 @@ app = create_app()
 
 if __name__ == "__main__":
     app.run(**_get_run_kwargs())
-
